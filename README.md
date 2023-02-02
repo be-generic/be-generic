@@ -22,6 +22,12 @@ Using Be-Generic, you can skip the implementation of mundane code that can be au
 - Use auto-generated Entity Framework classes (based on SQL definition)
 - Use Front-End and Back-End security filters to improve security and time of development
 
+> ℹ **SAMPLES** ℹ
+>
+> Sample implementations can be found on the following links (more comming later):
+>  - [HR application sample](https://github.com/be-generic/be-generic-sample)
+<br />
+
 > ℹ **SETUP INSTRUCTIONS** ℹ
 >
 > To setup the project please follow the instructions in the documentation on [the Wiki page](https://github.com/be-generic/be-generic/wiki)
