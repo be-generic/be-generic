@@ -793,7 +793,7 @@ namespace BeGeneric.Services.BeGeneric
                 await afterAction(new ActionData()
                 {
                     Id = id1,
-                    InputParameterData = JsonSerializer.Serialize(fieldValues),
+                    InputParameterData = await Get(user, controllerName, id1),
                     UserName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null,
                     Role = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null,
                     Context = entityContext
@@ -949,6 +949,8 @@ namespace BeGeneric.Services.BeGeneric
 
                 if (crossValue is JsonArray crossValueArray && crossValueArray != null)
                 {
+                    var tmp1 = crossValueArray.ToArray().Select(x => (Guid)x[entity.Properties.First(x => x.IsKey).CamelCaseName() ?? "id"]);
+                    
                     if (clearRelations)
                     {
                         if (!string.IsNullOrEmpty(crossEntity.ValidToColumnName))
@@ -967,10 +969,21 @@ namespace BeGeneric.Services.BeGeneric
                         }
 
                         qb2.AppendLine($"WHERE {dbStructure.ColumnDelimiterLeft}{entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = '{newId}';");
+
+                        qb2.AppendLine($"WHERE {dbStructure.ColumnDelimiterLeft}{entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = '{newId}'");
+
+                        if (tmp1.Any())
+                        {
+                            qb2.Append($" AND {dbStructure.ColumnDelimiterLeft}{entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} NOT IN ('{string.Join("', '", tmp1)}');");
+                        }
                     }
 
-                    foreach (Guid refId in crossValueArray.ToArray().Select(x => (Guid)x[entity.Properties.First(x => x.IsKey).CamelCaseName() ?? "id"]))
+                    foreach (Guid refId in tmp1)
                     {
+                        qb2.AppendLine($@"IF NOT EXISTS(SELECT * FROM {dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight}
+                           WHERE {dbStructure.ColumnDelimiterLeft}{entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = '{newId}'
+                           AND {dbStructure.ColumnDelimiterLeft}{entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = '{refId}')");
+
                         qb2.Append($"INSERT INTO {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} (");
                         if (!string.IsNullOrEmpty(crossEntity.ValidFromColumnName))
                         {
@@ -985,7 +998,7 @@ namespace BeGeneric.Services.BeGeneric
                             qb2.Append($"GETDATE(), ");
                         }
 
-                        qb2.AppendLine($"'{newId}', '{refId}');");
+                        qb2.AppendLine($"'{newId}', '{refId}')");
                     }
                 }
             }
