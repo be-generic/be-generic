@@ -1219,7 +1219,7 @@ namespace BeGeneric.Services.BeGeneric
 
             foreach (Property property in entity.ReferencingProperties.Where(x => (!string.IsNullOrEmpty(x.RelatedModelPropertyName) && allProperties) || (x.DisplayInRelatedEntityBaseModel && !allProperties)))
             {
-                queryBuilder.Append($", ({GenerateSelectQuery(property.Entity, false, ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} FOR JSON AUTO, INCLUDE_NULL_VALUES) AS {dbStructure.ColumnDelimiterLeft}{property.RelatedModelPropertyName.CamelCaseName()}List{dbStructure.ColumnDelimiterRight}");
+                queryBuilder.Append($", ({GenerateSelectQuery(property.Entity, false, ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} FOR JSON AUTO, INCLUDE_NULL_VALUES) AS {dbStructure.ColumnDelimiterLeft}{property.RelatedModelPropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
             }
 
             foreach (EntityRelation relation in entity.EntityRelations1)
