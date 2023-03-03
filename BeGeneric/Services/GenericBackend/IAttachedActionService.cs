@@ -45,6 +45,7 @@ namespace BeGeneric.Services.BeGeneric
         internal string GetAllResultData { get; set; }
         internal string GetOneResultData { get; set; }
         internal string InputParameterData { get; set; }
+        internal string SavedParameterData { get; set; }
 
         public EntityDbContext Context { get; set; }
     }
@@ -67,6 +68,7 @@ namespace BeGeneric.Services.BeGeneric
             GetAllResultData = baseData.GetAllResultData;
             GetOneResultData = baseData.GetOneResultData;
             InputParameterData = baseData.InputParameterData;
+            SavedParameterData = baseData.SavedParameterData;
 
             Context = baseData.Context;
         }
@@ -146,6 +148,32 @@ namespace BeGeneric.Services.BeGeneric
                 }
 
                 return inputParameter;
+            }
+        }
+
+        private bool isSavedParameterSet = false;
+        private T savedParameter = default;
+        public T SavedParameter
+        {
+            get
+            {
+                if (!isSavedParameterSet)
+                {
+                    try
+                    {
+                        savedParameter = JsonSerializer.Deserialize<T>(InputParameterData, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+                    }
+                    catch
+                    {
+                        savedParameter = default;
+                    }
+                    finally
+                    {
+                        isSavedParameterSet = true;
+                    }
+                }
+
+                return savedParameter;
             }
         }
     }

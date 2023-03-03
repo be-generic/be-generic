@@ -528,12 +528,15 @@ namespace BeGeneric.Services.BeGeneric
                     await sr.CloseAsync();
                     await transaction.CommitAsync();
 
+                    var savedEntity = await Get(user, controllerName, newId);
+
                     var afterAction = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Post, ActionOrderType.After);
                     if (afterAction != null)
                     {
                         await afterAction(new ActionData()
                         {
                             Id = newId,
+                            SavedParameterData = savedEntity,
                             InputParameterData = JsonSerializer.Serialize(fieldValues),
                             UserName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null,
                             Role = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null,
@@ -541,7 +544,7 @@ namespace BeGeneric.Services.BeGeneric
                         });
                     }
 
-                    return await Get(user, controllerName, newId);
+                    return savedEntity;
                 }
                 else
                 {
@@ -793,7 +796,8 @@ namespace BeGeneric.Services.BeGeneric
                 await afterAction(new ActionData()
                 {
                     Id = id1,
-                    InputParameterData = await Get(user, controllerName, id1),
+                    InputParameterData = JsonSerializer.Serialize(values),
+                    SavedParameterData = await Get(user, controllerName, id1),
                     UserName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null,
                     Role = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null,
                     Context = entityContext
