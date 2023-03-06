@@ -23,8 +23,17 @@ namespace BeGeneric.Services.BeGeneric
             }
 
             List<Tuple<string, object>> parameters = new();
-            string operation = ResolveOperator(Property.IndexOf(".") > -1);
-            operation = operation.Replace("$property", ResolvePropertyName(entity, originTableAlias));
+            bool includeAny = Property.IndexOf(".") > -1;
+            string operation = ResolveOperator(includeAny);
+
+            if (includeAny && !operation.StartsWith("$filterParam"))
+            {
+                operation = "EXISTS (" + ResolvePropertyName(entity, originTableAlias, operation) + ")";
+            }
+            else
+            {
+                operation = operation.Replace("$property", ResolvePropertyName(entity, originTableAlias));
+            }
 
             if (operation.Contains("$filterParam"))
             {
@@ -101,7 +110,7 @@ namespace BeGeneric.Services.BeGeneric
             return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter + 1, parameters);
         }
 
-        private string ResolvePropertyName(Entity entity, string originTableAlias, Dictionary<string, SelectPropertyData> joinData = null)
+        private string ResolvePropertyName(Entity entity, string originTableAlias, string includedFilter = null, Dictionary<string, SelectPropertyData> joinData = null)
         {
             var properties = Property.Split(".");
 
@@ -245,7 +254,16 @@ namespace BeGeneric.Services.BeGeneric
                 sb.Append(" WHERE ");
 
                 // IMPORTAINT!!! tab1 is always the table belonging to target entity !!!IMPORTANT
-                sb.Append($"{secondKeyTabName}.{secondKey} = {originTableAlias}.{firstKey})");
+                sb.Append($"{secondKeyTabName}.{secondKey} = {originTableAlias}.{firstKey}");
+
+                if (!string.IsNullOrEmpty(includedFilter))
+                {
+                    sb.Append($" AND {includedFilter.Replace("$property", $"fil_tab{properties.Length - 2}.[{properties[^1]}]")})");
+                }
+                else
+                {
+                    sb.Append($")");
+                }
 
                 return sb.ToString();
             }
