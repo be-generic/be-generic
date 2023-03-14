@@ -771,13 +771,42 @@ namespace BeGeneric.Services.BeGeneric
             }
 
             StringBuilder qb2 = new();
-            foreach (var crossEntity in entity.EntityRelations1)
+
+            string lastCrossTable = "";
+            string lastColumn1 = "";
+            string lastColumn2 = "";
+            foreach (var crossEntity in entity.EntityRelations1.OrderBy(x => x.CrossTableName).ThenBy(x => x.Entity1ReferencingColumnName))
             {
+                if (crossEntity.CrossTableName == lastCrossTable &&
+                    crossEntity.Entity1ReferencingColumnName == lastColumn1 &&
+                    crossEntity.Entity2ReferencingColumnName == lastColumn2)
+                {
+                    continue;
+                }
+
+                lastCrossTable = crossEntity.CrossTableName;
+                lastColumn1 = crossEntity.Entity1ReferencingColumnName;
+                lastColumn2 = crossEntity.Entity2ReferencingColumnName;
+
                 PrepareCrossEntityInsertQuery(values, id1, qb2, crossEntity, false, true);
             }
 
-            foreach (var crossEntity in entity.EntityRelations2)
+            lastCrossTable = "";
+            lastColumn1 = "";
+            lastColumn2 = "";
+            foreach (var crossEntity in entity.EntityRelations2.OrderBy(x => x.CrossTableName).ThenBy(x => x.Entity1ReferencingColumnName))
             {
+                if (crossEntity.CrossTableName == lastCrossTable &&
+                    crossEntity.Entity1ReferencingColumnName == lastColumn1 &&
+                    crossEntity.Entity2ReferencingColumnName == lastColumn2)
+                {
+                    continue;
+                }
+
+                lastCrossTable = crossEntity.CrossTableName;
+                lastColumn1 = crossEntity.Entity1ReferencingColumnName;
+                lastColumn2 = crossEntity.Entity2ReferencingColumnName;
+
                 PrepareCrossEntityInsertQuery(values, id1, qb2, crossEntity, true, true);
             }
 
