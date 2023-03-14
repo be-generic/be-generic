@@ -181,12 +181,12 @@ namespace BeGeneric
             services.AddDbContext<ControllerDbContext>(item => item.UseSqlServer(Configuration.GetConnectionString("connectionString")));
             services.AddSingleton<IDatabaseStructureService>(new MsSqlDatabaseStructureService(Configuration.GetConnectionString("connectionString")));
             services.AddSingleton<IAttachedActionService>(attachedActionService);
+            services.AddSingleton<IMemoryCacheService, MemoryCacheService>();
 
             services.AddScoped<IGenericDataService, GenericDataService>();
             services.AddScoped<IPasswordService, PasswordService>();
             services.AddScoped<IAuthenticationService, AuthenticationService>();
             services.AddScoped<IAccountService, AccountService>();
-            services.AddSingleton<IMemoryCacheService, MemoryCacheService>();
 
             services.AddScoped<IAutocompleteService, AutocompleteService>();
             services.AddScoped<IImageService, ImageService>();

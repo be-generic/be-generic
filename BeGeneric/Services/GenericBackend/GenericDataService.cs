@@ -3,6 +3,7 @@ using BeGeneric.Helpers;
 using BeGeneric.Models;
 using BeGeneric.Services.BeGeneric.DatabaseStructure;
 using BeGeneric.Services.BeGeneric.Exceptions;
+using BeGeneric.Services.Common;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -27,7 +28,7 @@ namespace BeGeneric.Services.BeGeneric
         protected readonly EntityDbContext entityContext;
         protected readonly ILogger logger;
         protected readonly IDatabaseStructureService dbStructure;
-        private readonly IMemoryCache memoryCache;
+        private readonly IMemoryCacheService memoryCache;
         private readonly IAttachedActionService attachedActionService;
 
         internal const string SCHEMA = "dbo";
@@ -35,7 +36,7 @@ namespace BeGeneric.Services.BeGeneric
         public GenericDataService(ControllerDbContext context,
             EntityDbContext entityContext,
             IDatabaseStructureService dbStructure,
-            IMemoryCache memoryCache,
+            IMemoryCacheService memoryCache,
             IAttachedActionService attachedActionService,
             ILogger logger = null)
         {
@@ -1477,65 +1478,48 @@ namespace BeGeneric.Services.BeGeneric
 
         public async Task<Endpoint> GetEndpoint(string endpointPath)
         {
-            if (!memoryCache.TryGetValue("Endpoints", out List<Endpoint> endpoints))
+            memoryCache.TryGetEndpoints(out List<Endpoint> endpoints, () =>
             {
-                endpoints = await context.Endpoints
+                endpoints = context.Endpoints
                     .Include(x => x.StartingEntity)
                         .ThenInclude(x => x.Properties)
                     .Include(x => x.EndpointProperties)
-                    .AsNoTracking()
-                    .ToListAsync();
+                    .AsNoTrackingWithIdentityResolution()
+                    .ToList();
 
-#if DEBUG
-                var cacheEntryOptions = new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromSeconds(5));
-#else
-                var cacheEntryOptions = new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
-#endif
-
-                memoryCache.Set("Endpoints", endpoints, cacheEntryOptions);
-            }
+                return endpoints;
+            });
 
             return endpoints.FirstOrDefault(x => string.Equals(x.EndpointPath, endpointPath, StringComparison.OrdinalIgnoreCase));
         }
 
         private async Task<List<Entity>> SetupEntityMemoryCache()
         {
-            if (!memoryCache.TryGetValue("Entity", out List<Entity> entities))
+            memoryCache.TryGetEntities(out List<Entity> entities, () =>
             {
-                await context.Entities
-                    .Include(e => e.EntityRoles)
-                        .ThenInclude(r => r.Role)
-                    .Include(p => p.ReferencingProperties)
-                    .LoadAsync();
-                await context.Properties.LoadAsync();
-                await context.Roles.LoadAsync();
-                await context.Accounts.LoadAsync();
-                await context.EntityRelations.LoadAsync();
+                context.Properties.Load();
+                context.Roles.Load();
+                context.Accounts.Load();
+                context.EntityRelations.Load();
 
-                entities = await context.Entities
+                foreach (var role in context.Roles)
+                {
+                    context.Entry(role).Collection(r => r.Accounts).Load();
+                }
+
+                entities = context.Entities
                     .Include(x => x.Properties)
                     .Include(x => x.ReferencingProperties)
                         .ThenInclude(x => x.Entity)
                     .Include(x => x.ReferencingProperties)
                     .Include(x => x.EntityRoles)
                         .ThenInclude(x => x.Role)
-                            .ThenInclude(x => x.Accounts)
                     .Include(x => x.EntityRelations1)
                     .Include(x => x.EntityRelations2)
-                    .ToListAsync();
+                    .ToList();
 
-#if DEBUG
-                var cacheEntryOptions = new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromSeconds(5));
-#else
-                var cacheEntryOptions = new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
-#endif
-
-                memoryCache.Set("Entity", entities, cacheEntryOptions);
-            }
+                return entities;
+            });
 
             return entities;
         }
