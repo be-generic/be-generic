@@ -422,12 +422,17 @@ namespace BeGeneric.Services.BeGeneric
 
             List<Property> properties = entity.Properties.Where(x => !x.IsKey && !x.IsReadOnly).OrderBy(x => x.PropertyName).ToList();
 
+            var usedProperties = properties
+                .Where(prop => values.ContainsKey((prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant())
+                    && (prop.ReferencingEntityId != null ||
+                        (values[(prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant()] as JsonValue) != null));
+
             StringBuilder queryBuilder = new();
             queryBuilder.AppendLine(@"DECLARE @generated_keys table(id UNIQUEIDENTIFIER);");
             queryBuilder.Append($"INSERT INTO {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} " +
-                $"({string.Join(", ", properties.Where(prop => values.ContainsKey((prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant())).Select(x => $"{dbStructure.ColumnDelimiterLeft}{x.PropertyName}{dbStructure.ColumnDelimiterRight}"))})");
+                $"({string.Join(", ", usedProperties.Select(x => $"{dbStructure.ColumnDelimiterLeft}{x.PropertyName}{dbStructure.ColumnDelimiterRight}"))})");
             queryBuilder.Append($"OUTPUT inserted.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} INTO @generated_keys ");
-            queryBuilder.AppendLine($"VALUES ({string.Join(", ", properties.Where(prop => values.ContainsKey((prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant())).Select((a, b) => "@PropertyValue" + b.ToString()))})");
+            queryBuilder.AppendLine($"VALUES ({string.Join(", ", usedProperties.Select((a, b) => "@PropertyValue" + b.ToString()))})");
 
             queryBuilder.AppendLine(@"SELECT * FROM @generated_keys");
 
