@@ -1258,7 +1258,7 @@ namespace BeGeneric.Services.BeGeneric
 
             foreach (EntityRelation relation in entity.EntityRelations1)
             {
-                if (!allProperties && !relation.ShowInEntity1Min)
+                if (!(allProperties && relation.ShowInEntity1) && !relation.ShowInEntity1Min)
                 {
                     continue;
                 }
@@ -1291,7 +1291,7 @@ namespace BeGeneric.Services.BeGeneric
                     continue;
                 }
 
-                if (!allProperties && !relation.ShowInEntity2Min)
+                if (!(allProperties && relation.ShowInEntity2) && !relation.ShowInEntity2Min)
                 {
                     continue;
                 }
