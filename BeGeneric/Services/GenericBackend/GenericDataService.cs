@@ -1009,8 +1009,6 @@ namespace BeGeneric.Services.BeGeneric
 
                         qb2.AppendLine($"WHERE {dbStructure.ColumnDelimiterLeft}{entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = '{newId}';");
 
-                        qb2.AppendLine($"WHERE {dbStructure.ColumnDelimiterLeft}{entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = '{newId}'");
-
                         if (tmp1.Any())
                         {
                             qb2.Append($" AND {dbStructure.ColumnDelimiterLeft}{entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} NOT IN ('{string.Join("', '", tmp1)}');");
