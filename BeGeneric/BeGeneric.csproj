@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition="'$(Configuration)' == 'Debug'">
-	  <!--<Exec Command="dotnet &quot;$(ProjectDir)CodeGenerators\BEGen\BEGenerator.dll&quot; &quot;$(ProjectDir).&quot; &quot;BeGeneric&quot;" />-->
+	  <Exec Command="dotnet &quot;$(ProjectDir)CodeGenerators\BEGen\BEGenerator.dll&quot; &quot;$(ProjectDir).&quot; &quot;BeGeneric&quot;" />
   </Target>
 
 </Project>
