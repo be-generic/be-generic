@@ -37,7 +37,6 @@ namespace BeGeneric.Services.BeGeneric
         public int PageSize { get; set; }
         public string SortProperty { get; set; }
         public string SortOrder { get; set; }
-        public string Filter { get; set; }
         public ComparerObject FilterObject { get; set; }
         public string UserName { get; set; }
         public string Role { get; set; }
@@ -59,7 +58,6 @@ namespace BeGeneric.Services.BeGeneric
             PageSize = baseData.PageSize;
             SortProperty = baseData.SortProperty;
             SortOrder = baseData.SortOrder;
-            Filter = baseData.Filter;
             FilterObject = baseData.FilterObject;
 
             UserName = baseData.UserName;

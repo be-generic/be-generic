@@ -14,11 +14,8 @@ namespace BeGeneric.Models
         public Guid EntityId { get; set; }
         public Guid? ReferencingEntityId { get; set; }
         public bool IsKey { get; set; }
-        public bool UseInBaseModel { get; set; }
         public bool IsReadOnly { get; set; }
-
         public string RelatedModelPropertyName { get; set; }
-        public bool DisplayInRelatedEntityBaseModel { get; set; }
 
 
         public virtual Entity Entity { get; set; }

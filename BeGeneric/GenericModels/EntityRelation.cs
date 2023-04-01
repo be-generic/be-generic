@@ -23,9 +23,7 @@ namespace BeGeneric.Models
         public string ValidToColumnName { get; set; }
         public string ActiveColumnName { get; set; }
 
-        public bool ShowInEntity1Min { get; set; }
         public bool ShowInEntity1 { get; set; }
-        public bool ShowInEntity2Min { get; set; }
         public bool ShowInEntity2 { get; set; }
 
         public virtual Entity Entity1 { get; set; }

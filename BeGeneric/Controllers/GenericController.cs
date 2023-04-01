@@ -28,9 +28,9 @@ namespace BeGeneric.Controllers
         }
 
         [HttpGet("{controllerName}")]
-        public async Task<IActionResult> Get(string controllerName, int? page = null, int pageSize = 10, string sortProperty = null, string sortOrder = "ASC", string filter = null)
+        public async Task<IActionResult> Get(string controllerName, int? page = null, int pageSize = 10, string sortProperty = null, string sortOrder = "ASC")
         {
-            return await GetActionResult(this.genericService.Get(this.User, controllerName, page, pageSize, sortProperty, sortOrder, filter));
+            return await GetActionResult(this.genericService.Get(this.User, controllerName, page, pageSize, sortProperty, sortOrder));
         }
 
         [HttpGet("{controllerName1}/{controllerName2?}/{controllerName3?}/{controllerName4?}")]
@@ -81,7 +81,7 @@ namespace BeGeneric.Controllers
         [HttpPost("{controllerName}/filter")]
         public async Task<IActionResult> Get(string controllerName, int? page = null, int pageSize = 10, string sortProperty = null, string sortOrder = "ASC", ComparerObject filterObject = null)
         {
-            return await GetActionResult(this.genericService.Get(this.User, controllerName, page, pageSize, sortProperty, sortOrder, null, filterObject));
+            return await GetActionResult(this.genericService.Get(this.User, controllerName, page, pageSize, sortProperty, sortOrder, filterObject));
         }
 
         [HttpPost("{controllerName}")]

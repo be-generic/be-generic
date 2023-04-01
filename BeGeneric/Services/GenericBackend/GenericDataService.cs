@@ -71,7 +71,7 @@ namespace BeGeneric.Services.BeGeneric
             int tabCounter = 0;
             List<SqlParameter> sqlParameters = new();
 
-            string query = GenerateSelectQuery(entity, true, ref tabCounter, roleName, userName, sqlParameters, null, id);
+            string query = GenerateSelectQuery(entity, ref tabCounter, roleName, userName, sqlParameters, null, id);
 
             List<Tuple<string, object>> permissionsFilterParams = new();
 
@@ -142,7 +142,7 @@ namespace BeGeneric.Services.BeGeneric
             }
         }
 
-        public async Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string sortProperty = null, string sortOrder = "ASC", string filter = null, ComparerObject filterObject = null)
+        public async Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string sortProperty = null, string sortOrder = "ASC", ComparerObject filterObject = null)
         {
             (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, getAll: true);
 
@@ -155,7 +155,6 @@ namespace BeGeneric.Services.BeGeneric
                 await action(new ActionData()
                 {
                     Page = page,
-                    Filter = filter,
                     FilterObject = filterObject,
                     PageSize = pageSize,
                     SortOrder = sortOrder,
@@ -199,15 +198,8 @@ namespace BeGeneric.Services.BeGeneric
 
             List<SqlParameter> parameters = new();
 
-            string query = GenerateSelectQuery(entity, false, ref tabCounter, roleName, userName, parameters);
+            string query = GenerateSelectQuery(entity, ref tabCounter, roleName, userName, parameters);
             var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, parameters.Count, "tab1", null);
-
-            if (!string.IsNullOrEmpty(filter))
-            {
-                query += " AND (";
-                query += string.Join(" OR ", entity.Properties.Where(x => x.UseInBaseModel && !x.IsKey).Select(x => $"{dbStructure.ColumnDelimiterLeft}{x.PropertyName}{dbStructure.ColumnDelimiterRight} LIKE @{x.PropertyName}"));
-                query += ")";
-            }
 
             if (filters != null)
             {
@@ -229,22 +221,14 @@ namespace BeGeneric.Services.BeGeneric
 
             int filteredTotalCount = totalCount;
 
-            if (filters != null || !string.IsNullOrEmpty(filter))
+            if (filters != null)
             {
-                filteredTotalCount = (await CountEntityAccess(user, entity, null, filter, filterObjectWithPermissions) as int?) ?? 0;
+                filteredTotalCount = (await CountEntityAccess(user, entity, null, filterObjectWithPermissions) as int?) ?? 0;
             }
 
             using (SqlCommand command = new(query, connection))
             {
                 command.Parameters.AddRange(parameters.ToArray());
-
-                if (!string.IsNullOrEmpty(filter))
-                {
-                    foreach (var prop in entity.Properties.Where(x => x.UseInBaseModel))
-                    {
-                        command.Parameters.AddWithValue(prop.PropertyName, "%" + filter + "%");
-                    }
-                }
 
                 if (filters != null)
                 {
@@ -276,7 +260,6 @@ namespace BeGeneric.Services.BeGeneric
                 await afterAction(new ActionData()
                 {
                     Page = page,
-                    Filter = filter,
                     FilterObject = filterObject,
                     PageSize = pageSize,
                     SortOrder = sortOrder,
@@ -586,14 +569,14 @@ namespace BeGeneric.Services.BeGeneric
             }
 
             string entityKey = entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity, permissionsFilter, null, new ComparerObject() { Filter = id.ToString(), Property = entityKey })) == 0)
+            if ((await CountEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey })) == 0)
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
 
             // TODO: ADD PREMISSION FILTER !!! IMPORTANT
             string relatedEntityKey = entity1.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity1, null, null, new ComparerObject() { Filter = relatedEntity.Id.ToString(), Property = relatedEntityKey })) == 0)
+            if ((await CountEntityAccess(user, entity1, null, new ComparerObject() { Filter = relatedEntity.Id.ToString(), Property = relatedEntityKey })) == 0)
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
@@ -859,7 +842,7 @@ namespace BeGeneric.Services.BeGeneric
             }
 
             string entityKey = entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity, permissionsFilter, null, new ComparerObject() { Filter = id.ToString(), Property = entityKey })) == 0)
+            if ((await CountEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey })) == 0)
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
@@ -927,14 +910,14 @@ namespace BeGeneric.Services.BeGeneric
             }
 
             string entityKey = entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity, permissionsFilter, null, new ComparerObject() { Filter = id.ToString(), Property = entityKey })) == 0)
+            if ((await CountEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey })) == 0)
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
 
             // TODO: ADD PREMISSION FILTER !!! IMPORTANT
             string relatedEntityKey = entity1.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity1, null, null, new ComparerObject() { Filter = relatedEntityId.ToString(), Property = relatedEntityKey })) == 0)
+            if ((await CountEntityAccess(user, entity1, null, new ComparerObject() { Filter = relatedEntityId.ToString(), Property = relatedEntityKey })) == 0)
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
@@ -1056,7 +1039,7 @@ namespace BeGeneric.Services.BeGeneric
             string keyProperty = entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID";
             string orderByColumn = string.IsNullOrEmpty(sortProperty) ?
                 null :
-                entity.Properties.Where(x => x.UseInBaseModel && x.CamelCaseName().ToLowerInvariant() == sortProperty.ToLowerInvariant()).Select(x => x.PropertyName).FirstOrDefault();
+                entity.Properties.Where(x => x.CamelCaseName().ToLowerInvariant() == sortProperty.ToLowerInvariant()).Select(x => x.PropertyName).FirstOrDefault();
             orderByColumn ??= keyProperty;
             alteredQuery += $" ORDER BY {dbStructure.ColumnDelimiterLeft}{orderByColumn}{dbStructure.ColumnDelimiterRight} {(string.Equals(sortOrder, "ASC", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC")}";
             return alteredQuery;
@@ -1074,7 +1057,7 @@ namespace BeGeneric.Services.BeGeneric
             return alteredQuery;
         }
 
-        private async Task<int> CountEntityAccess(ClaimsPrincipal user, Entity entity, string permissionsFilter, string filter = null, ComparerObject filterObject = null)
+        private async Task<int> CountEntityAccess(ClaimsPrincipal user, Entity entity, string permissionsFilter, ComparerObject filterObject = null)
         {
             string countQuery = @$"SELECT COUNT(*) FROM {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} tab1";
 
@@ -1118,27 +1101,12 @@ namespace BeGeneric.Services.BeGeneric
                 countQuery += ")";
             }
 
-            if (!string.IsNullOrEmpty(filter))
-            {
-                countQuery += countWhereActivated ? " AND (" : " WHERE (";
-                countQuery += string.Join(" OR ", entity.Properties.Where(x => x.UseInBaseModel).Select(x => $"{dbStructure.ColumnDelimiterLeft}{x.PropertyName}{dbStructure.ColumnDelimiterRight}" + " LIKE @" + x.PropertyName));
-                countQuery += ")";
-            }
-
             SqlConnection connection = context.Database.GetDbConnection() as SqlConnection;
 
             using SqlCommand command = new(countQuery, connection);
             if (filterObjectWithPermissions != null)
             {
                 command.Parameters.AddRange(filters.Item3.Select(x => new SqlParameter(x.Item1, x.Item2)).ToArray());
-            }
-
-            if (!string.IsNullOrEmpty(filter))
-            {
-                foreach (var prop in entity.Properties.Where(x => x.UseInBaseModel))
-                {
-                    command.Parameters.AddWithValue(prop.PropertyName, "%" + filter + "%");
-                }
             }
 
             if (connection.State != System.Data.ConnectionState.Open)
@@ -1238,7 +1206,7 @@ namespace BeGeneric.Services.BeGeneric
             return queryBuilder.ToString();
         }
 
-        private string GenerateSelectQuery(Entity entity, bool allProperties, ref int counter, string roleName, string userName, List<SqlParameter> parameters, string filterProperty = null, object filterValue = null)
+        private string GenerateSelectQuery(Entity entity, ref int counter, string roleName, string userName, List<SqlParameter> parameters, string filterProperty = null, object filterValue = null)
         {
             string filter = AuthorizeSubentity(roleName, userName, entity);
             StringBuilder queryBuilder = new();
@@ -1246,7 +1214,7 @@ namespace BeGeneric.Services.BeGeneric
 
             queryBuilder.AppendLine($"SELECT tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} AS {dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.CamelCaseName() ?? "id"}{dbStructure.ColumnDelimiterRight} ");
 
-            foreach (Property property in entity.Properties.Where(x => (allProperties || x.UseInBaseModel) && !x.IsKey))
+            foreach (Property property in entity.Properties.Where(x => !x.IsKey))
             {
                 if (property.ReferencingEntityId == null)
                 {
@@ -1254,18 +1222,18 @@ namespace BeGeneric.Services.BeGeneric
                 }
                 else
                 {
-                    queryBuilder.Append($", (JSON_QUERY(({GenerateSelectQuery(property.ReferencingEntity, false, ref counter, roleName, userName, parameters, $"tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight}")}))) AS {dbStructure.ColumnDelimiterLeft}{property.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
+                    queryBuilder.Append($", (JSON_QUERY(({GenerateSelectQuery(property.ReferencingEntity, ref counter, roleName, userName, parameters, $"tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight}")}))) AS {dbStructure.ColumnDelimiterLeft}{property.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
                 }
             }
 
-            foreach (Property property in entity.ReferencingProperties.Where(x => (!string.IsNullOrEmpty(x.RelatedModelPropertyName) && allProperties) || (x.DisplayInRelatedEntityBaseModel && !allProperties)))
+            foreach (Property property in entity.ReferencingProperties.Where(x => !string.IsNullOrEmpty(x.RelatedModelPropertyName)))
             {
-                queryBuilder.Append($", ({GenerateSelectQuery(property.Entity, false, ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} FOR JSON AUTO, INCLUDE_NULL_VALUES) AS {dbStructure.ColumnDelimiterLeft}{property.RelatedModelPropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
+                queryBuilder.Append($", ({GenerateSelectQuery(property.Entity, ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} FOR JSON AUTO, INCLUDE_NULL_VALUES) AS {dbStructure.ColumnDelimiterLeft}{property.RelatedModelPropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
             }
 
             foreach (EntityRelation relation in entity.EntityRelations1)
             {
-                if (!(allProperties && relation.ShowInEntity1) && !relation.ShowInEntity1Min)
+                if (!relation.ShowInEntity1)
                 {
                     continue;
                 }
@@ -1286,7 +1254,7 @@ namespace BeGeneric.Services.BeGeneric
                     whereQueryAddition += $@" AND ({dbStructure.ColumnDelimiterLeft}{relation.ValidToColumnName}{dbStructure.ColumnDelimiterRight} IS NULL OR {dbStructure.ColumnDelimiterLeft}{relation.ValidToColumnName}{dbStructure.ColumnDelimiterRight} >= GETDATE()) ";
                 }
 
-                queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity2, false, ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{relation.Entity2.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} IN (SELECT {dbStructure.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} FROM " +
+                queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity2, ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{relation.Entity2.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} IN (SELECT {dbStructure.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} FROM " +
                     $"{SCHEMA}.{dbStructure.ColumnDelimiterLeft}{relation.CrossTableName}{dbStructure.ColumnDelimiterRight} WHERE {dbStructure.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} {whereQueryAddition}) " +
                     $"FOR JSON AUTO, INCLUDE_NULL_VALUES) AS {dbStructure.ColumnDelimiterLeft}{relation.Entity1PropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
             }
@@ -1298,7 +1266,7 @@ namespace BeGeneric.Services.BeGeneric
                     continue;
                 }
 
-                if (!(allProperties && relation.ShowInEntity2) && !relation.ShowInEntity2Min)
+                if (!relation.ShowInEntity2)
                 {
                     continue;
                 }
@@ -1319,7 +1287,7 @@ namespace BeGeneric.Services.BeGeneric
                     whereQueryAddition += $@" AND ({dbStructure.ColumnDelimiterLeft}{relation.ValidToColumnName}{dbStructure.ColumnDelimiterRight} IS NULL OR {dbStructure.ColumnDelimiterLeft}{relation.ValidToColumnName}{dbStructure.ColumnDelimiterRight} >= GETDATE()) ";
                 }
 
-                queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity1, false, ref counter, roleName, userName, parameters)} AND " +
+                queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity1, ref counter, roleName, userName, parameters)} AND " +
                     $"{dbStructure.ColumnDelimiterLeft}{relation.Entity1.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} IN " +
                     $"(SELECT {dbStructure.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} FROM {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{relation.CrossTableName}{dbStructure.ColumnDelimiterRight} " +
                     $"WHERE {dbStructure.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} {whereQueryAddition}) FOR JSON AUTO, INCLUDE_NULL_VALUES) " +
@@ -1418,7 +1386,7 @@ namespace BeGeneric.Services.BeGeneric
             bool put = false,
             bool delete = false)
         {
-            var entities = await SetupEntityMemoryCache();
+            var entities = SetupEntityMemoryCache();
 
             List<Entity> entityList = entities
                 .Where(x => controllerName != null && x.ControllerName != null && x.ControllerName.ToLower() == controllerName.ToLower()).ToList();
@@ -1529,7 +1497,7 @@ namespace BeGeneric.Services.BeGeneric
             return endpoints.FirstOrDefault(x => string.Equals(x.EndpointPath, endpointPath, StringComparison.OrdinalIgnoreCase));
         }
 
-        private async Task<List<Entity>> SetupEntityMemoryCache()
+        private List<Entity> SetupEntityMemoryCache()
         {
             memoryCache.TryGetEntities(out List<Entity> entities, () =>
             {
@@ -1538,7 +1506,7 @@ namespace BeGeneric.Services.BeGeneric
                 context.Accounts.Load();
                 context.EntityRelations.Load();
 
-                foreach (var role in context.Roles)
+                foreach (var role in context.Roles.ToArray())
                 {
                     context.Entry(role).Collection(r => r.Accounts).Load();
                 }
