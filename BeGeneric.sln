@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BeGeneric", "BeGeneric\BeGe
 EndProject
 Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "BeGenericDatabase", "SampleDatabase\BeGenericDatabase.sqlproj", "{89A3F5BC-398E-4FBE-9B31-BFAE203048DA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeGeneric.Backend", "BeGeneric.Backend\BeGeneric.Backend.csproj", "{128B02A9-65F9-4123-B693-74058CF0039B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,6 +25,10 @@ Global
 		{89A3F5BC-398E-4FBE-9B31-BFAE203048DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{89A3F5BC-398E-4FBE-9B31-BFAE203048DA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{89A3F5BC-398E-4FBE-9B31-BFAE203048DA}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{128B02A9-65F9-4123-B693-74058CF0039B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{128B02A9-65F9-4123-B693-74058CF0039B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{128B02A9-65F9-4123-B693-74058CF0039B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{128B02A9-65F9-4123-B693-74058CF0039B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
