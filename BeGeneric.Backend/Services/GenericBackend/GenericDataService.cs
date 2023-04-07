@@ -132,12 +132,12 @@ namespace BeGeneric.Backend.Services.BeGeneric
             }
         }
 
-        public async Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string sortProperty = null, string sortOrder = "ASC", ComparerObject filterObject = null)
+        public async Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC", ComparerObject? filterObject = null)
         {
             (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, getAll: true);
 
-            string userName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null;
-            string roleName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null;
+            string? userName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null;
+            string? roleName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null;
 
             var action = this.attachedActionService.GetAttachedAction(controllerName, ActionType.GetAll, ActionOrderType.Before);
             if (action != null)

@@ -32,16 +32,16 @@ namespace BeGeneric.Backend.Services.BeGeneric
         public Guid Id { get; set; }
         public int? Page { get; set; } 
         public int PageSize { get; set; }
-        public string SortProperty { get; set; }
-        public string SortOrder { get; set; }
-        public ComparerObject FilterObject { get; set; }
-        public string UserName { get; set; }
-        public string Role { get; set; }
+        public string? SortProperty { get; set; }
+        public string? SortOrder { get; set; }
+        public ComparerObject? FilterObject { get; set; }
+        public string? UserName { get; set; }
+        public string? Role { get; set; }
 
-        internal string GetAllResultData { get; set; }
-        internal string GetOneResultData { get; set; }
-        internal string InputParameterData { get; set; }
-        internal string SavedParameterData { get; set; }
+        internal string? GetAllResultData { get; set; }
+        internal string? GetOneResultData { get; set; }
+        internal string? InputParameterData { get; set; }
+        internal string? SavedParameterData { get; set; }
     }
 
     public class ActionData<T> : ActionData
@@ -65,8 +65,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
         }
 
         private bool isGetAllResultSet = false;
-        private PagedResult<T> getAllResult = null;
-        public PagedResult<T> GetAllResult
+        private PagedResult<T>? getAllResult = null;
+        public PagedResult<T>? GetAllResult
         {
             get
             {
@@ -91,8 +91,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
         }
 
         private bool isGetOneResultSet = false;
-        private T getOneResult = default;
-        public T GetOneResult
+        private T? getOneResult = default;
+        public T? GetOneResult
         {
             get
             {
@@ -117,8 +117,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
         }
 
         private bool isInputParameterSet = false;
-        private T inputParameter = default;
-        public T InputParameter
+        private T? inputParameter = default;
+        public T? InputParameter
         {
             get
             {
@@ -143,8 +143,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
         }
 
         private bool isSavedParameterSet = false;
-        private T savedParameter = default;
-        public T SavedParameter
+        private T? savedParameter = default;
+        public T? SavedParameter
         {
             get
             {

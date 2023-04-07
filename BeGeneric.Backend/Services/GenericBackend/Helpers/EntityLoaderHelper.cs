@@ -36,6 +36,8 @@ namespace BeGeneric.Helpers
                     {
                         property.ReferencingEntity = entitiesList.First(x => x.EntityId == property.ReferencingEntityId);
                     }
+
+                    property.Entity = entitiesList.First(x => x.EntityId == property.EntityId);
                 }
 
                 entity.ReferencingProperties = entitiesList.SelectMany(x => x.Properties).Where(x => x.ReferencingEntityId == entity.EntityId).ToList();
