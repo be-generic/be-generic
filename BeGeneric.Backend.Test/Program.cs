@@ -11,15 +11,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
-using StreamReader sr = new("be-generic.config.json");
-string json = sr.ReadToEnd();
-List<EntityDefinition> items = JsonSerializer.Deserialize<List<EntityDefinition>>(json);
-
 builder.Services.AddGenericBackendServices(
     builder.Configuration.GetConnectionString("connectionString"),
-    items,
-    new List<ColumnMetadataDefinition>(),
+    "./be-generic.config.json",
+    "./be-generic-metadata.config.json",
     (x) => { }
 );
 

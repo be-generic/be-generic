@@ -1097,7 +1097,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             return (await command.ExecuteScalarAsync() as int?) ?? 0;
         }
 
-        private List<Tuple<string, string>> GetJoinsForSelect(Entity entity, string joinProperty, string joinTableName, List<Tuple<string, string>> properties, Dictionary<string, SelectPropertyData> joinData, string path, ref int counter)
+        private List<Tuple<string, string>> GetJoinsForSelect(Entity entity, string? joinProperty, string joinTableName, List<Tuple<string, string>> properties, Dictionary<string, SelectPropertyData> joinData, string? path, ref int counter)
         {
             string tableName = $"tab{++counter}";
             var data = new SelectPropertyData()
@@ -1466,12 +1466,12 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
     public record SelectPropertyData
     {
-        public string JoinTableName { get; set; }
-        public string JoinPropertyName { get; set; }
-        public string OriginalTableName { get; set; }
-        public string TableName { get; set; }
-        public string IdPropertyName { get; set; }
-        public string TableDTOName { get; set; }
-        public List<Tuple<string, string, string>> Properties { get; set; }
+        public string? JoinTableName { get; set; }
+        public string? JoinPropertyName { get; set; }
+        public string? OriginalTableName { get; set; }
+        public string? TableName { get; set; }
+        public string? IdPropertyName { get; set; }
+        public string? TableDTOName { get; set; }
+        public List<Tuple<string, string, string>>? Properties { get; set; }
     }
 }
