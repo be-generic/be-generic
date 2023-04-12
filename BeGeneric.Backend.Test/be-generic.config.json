@@ -1,13 +1,13 @@
 [
   {
-    "EntityKey": "ED0ED1A2-05D5-41F4-9113-83EF6A03A451",
-    "TableName": "Employee",
+    "EntityKey": "A8123763-AB44-4CC6-A55F-07469F547F05",
+    "TableName": "PerformanceReviews",
     "ObjectName": null,
-    "ControllerName": "employee",
+    "ControllerName": null,
     "SoftDeleteColumn": null,
     "Properties": [
       {
-        "PropertyName": "FirstName",
+        "PropertyName": "ReviewDate",
         "ModelPropertyName": null,
         "IsKey": false,
         "IsReadOnly": false,
@@ -15,7 +15,7 @@
         "ReferencingEntityKey": null
       },
       {
-        "PropertyName": "LastName",
+        "PropertyName": "ReviewText",
         "ModelPropertyName": null,
         "IsKey": false,
         "IsReadOnly": false,
@@ -23,17 +23,76 @@
         "ReferencingEntityKey": null
       },
       {
-        "PropertyName": "ManagerId",
-        "ModelPropertyName": "Manager",
-        "IsKey": false,
-        "IsReadOnly": false,
-        "RelatedModelPropertyName": null,
-        "ReferencingEntityKey": "966D5ED8-5950-4BCF-9A64-8F4F914E37A4"
-      },
-      {
-        "PropertyName": "Id",
+        "PropertyName": "PerformanceReviewID",
         "ModelPropertyName": null,
         "IsKey": true,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "ReviewerID",
+        "ModelPropertyName": "Reviewer",
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": "53EEDC00-0EAB-4E32-B6E0-C3BF238283B3"
+      },
+      {
+        "PropertyName": "EmployeeID",
+        "ModelPropertyName": "Employee",
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": "D8838044-4928-479F-B33F-996775522158"
+      }
+    ],
+    "EntityRoles": [],
+    "EntityRelations": []
+  },
+  {
+    "EntityKey": "56F59265-BF88-4800-B2D1-09CDB637F3F2",
+    "TableName": "SalaryHistories",
+    "ObjectName": "SalaryHistory",
+    "ControllerName": "salary-history",
+    "SoftDeleteColumn": null,
+    "Properties": [
+      {
+        "PropertyName": "NewSalary",
+        "ModelPropertyName": null,
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "OldSalary",
+        "ModelPropertyName": null,
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "EmployeeID",
+        "ModelPropertyName": "Employee",
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": "53EEDC00-0EAB-4E32-B6E0-C3BF238283B3"
+      },
+      {
+        "PropertyName": "SalaryHistoryID",
+        "ModelPropertyName": null,
+        "IsKey": true,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "EffectiveDate",
+        "ModelPropertyName": null,
+        "IsKey": false,
         "IsReadOnly": false,
         "RelatedModelPropertyName": null,
         "ReferencingEntityKey": null
@@ -43,16 +102,51 @@
     "EntityRelations": []
   },
   {
-    "EntityKey": "966D5ED8-5950-4BCF-9A64-8F4F914E37A4",
-    "TableName": "Employee",
+    "EntityKey": "5006ABA0-DD5E-4A1A-BEEC-261E92C4C8FD",
+    "TableName": "Departments",
+    "ObjectName": "Department",
+    "ControllerName": "department",
+    "SoftDeleteColumn": null,
+    "Properties": [
+      {
+        "PropertyName": "ManagerID",
+        "ModelPropertyName": "Manager",
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": "607D835C-687D-4B50-B1A5-5DC1E6789E78"
+      },
+      {
+        "PropertyName": "DepartmentID",
+        "ModelPropertyName": null,
+        "IsKey": true,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "DepartmentName",
+        "ModelPropertyName": null,
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      }
+    ],
+    "EntityRoles": [],
+    "EntityRelations": []
+  },
+  {
+    "EntityKey": "607D835C-687D-4B50-B1A5-5DC1E6789E78",
+    "TableName": "Employees",
     "ObjectName": "Manager",
     "ControllerName": null,
     "SoftDeleteColumn": null,
     "Properties": [
       {
-        "PropertyName": "LastName",
+        "PropertyName": "EmployeeID",
         "ModelPropertyName": null,
-        "IsKey": false,
+        "IsKey": true,
         "IsReadOnly": false,
         "RelatedModelPropertyName": null,
         "ReferencingEntityKey": null
@@ -66,9 +160,181 @@
         "ReferencingEntityKey": null
       },
       {
-        "PropertyName": "Id",
+        "PropertyName": "LastName",
+        "ModelPropertyName": null,
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      }
+    ],
+    "EntityRoles": [],
+    "EntityRelations": []
+  },
+  {
+    "EntityKey": "43F062DC-F21E-4393-AB4B-7A2636230875",
+    "TableName": "Skills",
+    "ObjectName": "Skill",
+    "ControllerName": "skill",
+    "SoftDeleteColumn": null,
+    "Properties": [
+      {
+        "PropertyName": "SkillID",
         "ModelPropertyName": null,
         "IsKey": true,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "SkillName",
+        "ModelPropertyName": null,
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      }
+    ],
+    "EntityRoles": [],
+    "EntityRelations": []
+  },
+  {
+    "EntityKey": "D8838044-4928-479F-B33F-996775522158",
+    "TableName": "Employees",
+    "ObjectName": "Employee",
+    "ControllerName": "employee",
+    "SoftDeleteColumn": null,
+    "Properties": [
+      {
+        "PropertyName": "EmployeeID",
+        "ModelPropertyName": null,
+        "IsKey": true,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "FirstName",
+        "ModelPropertyName": null,
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "Salary",
+        "ModelPropertyName": null,
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "HireDate",
+        "ModelPropertyName": null,
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "LastName",
+        "ModelPropertyName": null,
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "Phone",
+        "ModelPropertyName": null,
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "Email",
+        "ModelPropertyName": null,
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "DepartmentID",
+        "ModelPropertyName": null,
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      }
+    ],
+    "EntityRoles": [],
+    "EntityRelations": []
+  },
+  {
+    "EntityKey": "53EEDC00-0EAB-4E32-B6E0-C3BF238283B3",
+    "TableName": "Employees",
+    "ObjectName": "EmployeeBaseData",
+    "ControllerName": null,
+    "SoftDeleteColumn": null,
+    "Properties": [
+      {
+        "PropertyName": "EmployeeID",
+        "ModelPropertyName": null,
+        "IsKey": true,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "FirstName",
+        "ModelPropertyName": null,
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "LastName",
+        "ModelPropertyName": null,
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      }
+    ],
+    "EntityRoles": [],
+    "EntityRelations": []
+  },
+  {
+    "EntityKey": "0A0182E0-35C9-41EB-925F-CFFBCA498FCE",
+    "TableName": "JobTitles",
+    "ObjectName": "Job",
+    "ControllerName": "job",
+    "SoftDeleteColumn": null,
+    "Properties": [
+      {
+        "PropertyName": "JobTitleName",
+        "ModelPropertyName": "JobName",
+        "IsKey": false,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "JobTitleID",
+        "ModelPropertyName": "JobID",
+        "IsKey": true,
+        "IsReadOnly": false,
+        "RelatedModelPropertyName": null,
+        "ReferencingEntityKey": null
+      },
+      {
+        "PropertyName": "JobDescription",
+        "ModelPropertyName": null,
+        "IsKey": false,
         "IsReadOnly": false,
         "RelatedModelPropertyName": null,
         "ReferencingEntityKey": null

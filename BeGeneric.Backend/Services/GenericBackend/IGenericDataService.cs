@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using System.Text.Json.Nodes;
-using System.Threading.Tasks;
 using Endpoint = BeGeneric.Backend.Models.Endpoint;
 
 namespace BeGeneric.Backend.Services.BeGeneric
 {
-    public interface IGenericDataService
+    public interface IGenericDataService<T>
     {
-        Task<string> Get(ClaimsPrincipal user, string controllerName, Guid id);
+        Task<string> Get(ClaimsPrincipal user, string controllerName, T id);
 
         Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string sortProperty = null, string sortOrder = "ASC", ComparerObject filterObject = null);
 
@@ -17,12 +14,12 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
         Task<string> Post(ClaimsPrincipal user, string controllerName, Dictionary<string, JsonNode> fieldValues);
 
-        Task PostRelatedEntity(ClaimsPrincipal user, string controllerName, Guid id, string relatedEntityName, RelatedEntityObject relatedEntity);
+        Task PostRelatedEntity(ClaimsPrincipal user, string controllerName, T id, string relatedEntityName, RelatedEntityObject relatedEntity);
 
-        Task<Guid> Patch(ClaimsPrincipal user, string controllerName, Guid? id, Dictionary<string, JsonNode> fieldValues);
+        Task<T> Patch(ClaimsPrincipal user, string controllerName, T? id, Dictionary<string, JsonNode> fieldValues);
 
-        Task Delete(ClaimsPrincipal user, string controllerName, Guid id);
+        Task Delete(ClaimsPrincipal user, string controllerName, T id);
 
-        Task DeleteRelatedEntity(ClaimsPrincipal user, string controllerName, Guid id, string relatedEntityName, Guid relatedEntityId);
+        Task DeleteRelatedEntity(ClaimsPrincipal user, string controllerName, T id, string relatedEntityName, T relatedEntityId);
     }
 }

@@ -68,13 +68,19 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
 FROM [SCHEMA].ColumnMetadata
 FOR JSON AUTO, INCLUDE_NULL_VALUES";
 
-        public static void AddGenericBackendServices(this IServiceCollection services,
+        public static void AddGenericBackendServices<T>(this IServiceCollection services,
             string connectionString,
             List<EntityDefinition> entityDefinitions,
             List<ColumnMetadataDefinition> metadataDefinitions,
-            Action<IAttachedActionService> configureAttachedActionsAction)
+            Action<IAttachedActionService<T>> configureAttachedActionsAction,
+            string databaseSchema = "dbo")
         {
-            services.AddSingleton<IDatabaseStructureService>(new MsSqlDatabaseStructureService(connectionString, metadataDefinitions));
+            IDatabaseStructureService databaseStructureService = new MsSqlDatabaseStructureService(connectionString, databaseSchema, metadataDefinitions)
+            {
+                DataSchema = databaseSchema
+            };
+
+            services.AddSingleton(databaseStructureService);
             services.AddSingleton<IMemoryCacheService, MemoryCacheService>();
             services.AddSingleton(entityDefinitions);
 
@@ -85,31 +91,34 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
                 return connection;
             });
 
-            services.AddScoped<IGenericDataService, GenericDataService>();
+            services.AddScoped<IGenericDataService<T>, GenericDataService<T>>();
 
-            AttachedActionService attachedActionService = new();
+            AttachedActionService<T> attachedActionService = new();
             configureAttachedActionsAction(attachedActionService);
-            services.AddSingleton<IAttachedActionService>(attachedActionService);
+            services.AddSingleton<IAttachedActionService<T>>(attachedActionService);
         }
 
-        public static void AddGenericBackendServices(this IServiceCollection services,
+        public static void AddGenericBackendServices<T>(this IServiceCollection services,
             string connectionString,
             string configDatabaseConnectionString,
-            Action<IAttachedActionService> configureAttachedActionsAction,
+            Action<IAttachedActionService<T>> configureAttachedActionsAction,
+            string databaseSchema = "dbo",
             string configSchema = "gba")
         {
             AddGenericBackendServices(services, 
                 connectionString, 
                 GetEntityDefinitions(configDatabaseConnectionString, configSchema), 
                 GetMetadataDefinitions(configDatabaseConnectionString, configSchema), 
-                configureAttachedActionsAction);
+                configureAttachedActionsAction,
+                databaseSchema);
         }
 
-        public static void AddGenericBackendServices(this IServiceCollection services,
+        public static void AddGenericBackendServices<T>(this IServiceCollection services,
             string connectionString,
             string entityDefinitionsPath,
             string metadataDefinitionsPath,
-            Action<IAttachedActionService> configureAttachedActionsAction)
+            Action<IAttachedActionService<T>> configureAttachedActionsAction,
+            string databaseSchema = "dbo")
         {
             using StreamReader metadataReader = new(metadataDefinitionsPath);
             List<ColumnMetadataDefinition> metadataDefinitions = JsonSerializer.Deserialize<List<ColumnMetadataDefinition>>(metadataReader.ReadToEnd());
@@ -117,7 +126,7 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
             using StreamReader entityReader = new(entityDefinitionsPath);
             List<EntityDefinition> entityDefinitions = JsonSerializer.Deserialize<List<EntityDefinition>>(entityReader.ReadToEnd());
 
-            AddGenericBackendServices(services, connectionString, entityDefinitions, metadataDefinitions, configureAttachedActionsAction);
+            AddGenericBackendServices(services, connectionString, entityDefinitions, metadataDefinitions, configureAttachedActionsAction, databaseSchema);
         }
 
         private static List<EntityDefinition> GetEntityDefinitions(string connectionString, string schema)

@@ -16,6 +16,8 @@
         string ColumnDelimiterRight { get; }
 
         string StringDelimiter { get; }
+
+        string DataSchema { get; }
     }
 
     public class DatabaseFieldSizeLimitation

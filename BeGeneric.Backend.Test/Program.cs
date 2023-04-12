@@ -1,6 +1,4 @@
 using BeGeneric.Backend;
-using BeGeneric.Backend.Settings;
-using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,11 +9,12 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddGenericBackendServices(
+builder.Services.AddGenericBackendServices<int>(
     builder.Configuration.GetConnectionString("connectionString"),
     "./be-generic.config.json",
     "./be-generic-metadata.config.json",
-    (x) => { }
+    (x) => { },
+    databaseSchema: "hr"
 );
 
 var app = builder.Build();

@@ -3,12 +3,12 @@ using System.Text.Json;
 
 namespace BeGeneric.Backend.Services.BeGeneric
 {
-    public interface IAttachedActionService
+    public interface IAttachedActionService<T>
     {
-        Func<ActionData<T>, Task> GetAttachedAction<T>(string controllerName, ActionType actionType, ActionOrderType actionOrder);
-        Func<ActionData, Task> GetAttachedAction(string controllerName, ActionType actionType, ActionOrderType actionOrder);
+        Func<ActionData<G, T>, Task> GetAttachedAction<G>(string controllerName, ActionType actionType, ActionOrderType actionOrder);
+        Func<ActionData<T>, Task> GetAttachedAction(string controllerName, ActionType actionType, ActionOrderType actionOrder);
 
-        void RegisterAttachedAction<T>(string controllerName, ActionType actionType, ActionOrderType actionOrder, Func<ActionData<T>, Task> action);
+        void RegisterAttachedAction<G>(string controllerName, ActionType actionType, ActionOrderType actionOrder, Func<ActionData<G, T>, Task> action);
     }
 
     [Flags]
@@ -27,9 +27,9 @@ namespace BeGeneric.Backend.Services.BeGeneric
         After = 2
     }
 
-    public class ActionData
+    public class ActionData<T>
     {
-        public Guid Id { get; set; }
+        public T Id { get; set; }
         public int? Page { get; set; } 
         public int PageSize { get; set; }
         public string? SortProperty { get; set; }
@@ -44,9 +44,9 @@ namespace BeGeneric.Backend.Services.BeGeneric
         internal string? SavedParameterData { get; set; }
     }
 
-    public class ActionData<T> : ActionData
+    public class ActionData<T, G> : ActionData<G>
     {
-        public ActionData(ActionData baseData)
+        public ActionData(ActionData<G> baseData)
         {
             Id = baseData.Id;
             Page = baseData.Page;
@@ -65,8 +65,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
         }
 
         private bool isGetAllResultSet = false;
-        private PagedResult<T>? getAllResult = null;
-        public PagedResult<T>? GetAllResult
+        private PagedResult<G>? getAllResult = null;
+        public PagedResult<G>? GetAllResult
         {
             get
             {
@@ -74,7 +74,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 {
                     try
                     {
-                        getAllResult = JsonSerializer.Deserialize<PagedResult<T>>(GetAllResultData, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+                        getAllResult = JsonSerializer.Deserialize<PagedResult<G>>(GetAllResultData, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
                     }
                     catch
                     {
@@ -91,8 +91,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
         }
 
         private bool isGetOneResultSet = false;
-        private T? getOneResult = default;
-        public T? GetOneResult
+        private G? getOneResult = default;
+        public G? GetOneResult
         {
             get
             {
@@ -100,7 +100,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 {
                     try
                     {
-                        getOneResult = JsonSerializer.Deserialize<T>(GetOneResultData, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+                        getOneResult = JsonSerializer.Deserialize<G>(GetOneResultData, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
                     }
                     catch
                     {
@@ -117,8 +117,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
         }
 
         private bool isInputParameterSet = false;
-        private T? inputParameter = default;
-        public T? InputParameter
+        private G? inputParameter = default;
+        public G? InputParameter
         {
             get
             {
@@ -126,7 +126,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 {
                     try
                     {
-                        inputParameter = JsonSerializer.Deserialize<T>(InputParameterData, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+                        inputParameter = JsonSerializer.Deserialize<G>(InputParameterData, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
                     }
                     catch
                     {
@@ -143,8 +143,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
         }
 
         private bool isSavedParameterSet = false;
-        private T? savedParameter = default;
-        public T? SavedParameter
+        private G? savedParameter = default;
+        public G? SavedParameter
         {
             get
             {
@@ -152,7 +152,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 {
                     try
                     {
-                        savedParameter = JsonSerializer.Deserialize<T>(InputParameterData, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+                        savedParameter = JsonSerializer.Deserialize<G>(InputParameterData, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
                     }
                     catch
                     {

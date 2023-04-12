@@ -5,11 +5,11 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BeGeneric", "BeGeneric\BeGeneric.csproj", "{160DD99C-20CC-4F43-911D-D101AB29B97C}"
 EndProject
-Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "BeGenericDatabase", "SampleDatabase\BeGenericDatabase.sqlproj", "{89A3F5BC-398E-4FBE-9B31-BFAE203048DA}"
+Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "BeGeneric.SampleDatabase", "SampleDatabase\BeGeneric.SampleDatabase.sqlproj", "{89A3F5BC-398E-4FBE-9B31-BFAE203048DA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeGeneric.Backend", "BeGeneric.Backend\BeGeneric.Backend.csproj", "{128B02A9-65F9-4123-B693-74058CF0039B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BeGeneric.Backend", "BeGeneric.Backend\BeGeneric.Backend.csproj", "{128B02A9-65F9-4123-B693-74058CF0039B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeGeneric.Backend.Test", "BeGeneric.Backend.Test\BeGeneric.Backend.Test.csproj", "{EBCB5905-B7EC-4E62-B714-07AAD0E7FA73}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BeGeneric.Backend.Test", "BeGeneric.Backend.Test\BeGeneric.Backend.Test.csproj", "{EBCB5905-B7EC-4E62-B714-07AAD0E7FA73}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

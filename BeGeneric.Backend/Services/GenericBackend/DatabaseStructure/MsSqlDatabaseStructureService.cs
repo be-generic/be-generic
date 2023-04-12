@@ -7,7 +7,7 @@ namespace BeGeneric.Backend.Services.BeGeneric.DatabaseStructure
     {
         private readonly Dictionary<string, Dictionary<string, DatabaseFieldData>> _fieldData = new();
 
-        public MsSqlDatabaseStructureService(string connectionString, List<ColumnMetadataDefinition> metadata)
+        public MsSqlDatabaseStructureService(string connectionString, string dbSchema, List<ColumnMetadataDefinition> metadata)
         {
             try
             {
@@ -18,7 +18,7 @@ FROM INFORMATION_SCHEMA.COLUMNS c
 WHERE TABLE_SCHEMA = @Schema
 ", conn);
 
-                command.Parameters.AddWithValue("@Schema", GenericDataService.SCHEMA);
+                command.Parameters.AddWithValue("@Schema", dbSchema);
 
                 conn.Open();
 
@@ -104,6 +104,8 @@ WHERE TABLE_SCHEMA = @Schema
             DatabaseFieldData field = GetField(fieldName, tableName);
             return field.Regex;
         }
+
+        public string DataSchema { get; internal set; }
 
         public string ColumnDelimiterLeft => "[";
 

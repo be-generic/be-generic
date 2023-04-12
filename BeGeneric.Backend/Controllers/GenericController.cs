@@ -7,17 +7,17 @@ namespace BeGeneric.Backend.Controllers
 {
     [ApiController]
     [Route("")]
-    public class GenericController : BaseController
+    public class GenericController<T> : BaseController
     {
-        private readonly IGenericDataService genericService;
+        private readonly IGenericDataService<T> genericService;
 
-        public GenericController(IGenericDataService genericService)
+        public GenericController(IGenericDataService<T> genericService)
         {
             this.genericService = genericService;
         }
 
         [HttpGet("{controllerName}/{id}")]
-        public async Task<IActionResult> Get(string controllerName, Guid id)
+        public async Task<IActionResult> Get(string controllerName, T id)
         {
             return await GetActionResult(this.genericService.Get(this.User, controllerName, id));
         }
@@ -41,14 +41,14 @@ namespace BeGeneric.Backend.Controllers
         }
 
         [HttpPost("{controllerName}/{id}/{relatedEntityName}")]
-        public async Task<IActionResult> Post(string controllerName, Guid id, string relatedEntityName, [FromBody] RelatedEntityObject relatedEntity)
+        public async Task<IActionResult> Post(string controllerName, T id, string relatedEntityName, [FromBody] RelatedEntityObject relatedEntity)
         {
             return await GetActionResult(this.genericService.PostRelatedEntity(this.User, controllerName, id, relatedEntityName, relatedEntity));
         }
 
         [HttpPut("{controllerName}/{id?}")]
         [HttpPatch("{controllerName}/{id?}")]
-        public async Task<IActionResult> Patch(string controllerName, Guid? id, Dictionary<string, JsonNode> fieldValues)
+        public async Task<IActionResult> Patch(string controllerName, T? id, Dictionary<string, JsonNode> fieldValues)
         {
             try
             {
@@ -67,9 +67,9 @@ namespace BeGeneric.Backend.Controllers
 
         [HttpPut("{controllerName}/return/{id?}")]
         [HttpPatch("{controllerName}/return/{id?}")]
-        public async Task<IActionResult> PatchReturn(string controllerName, Guid? id, Dictionary<string, JsonNode> fieldValues)
+        public async Task<IActionResult> PatchReturn(string controllerName, T? id, Dictionary<string, JsonNode> fieldValues)
         {
-            Guid id1;
+            T id1;
             try
             {
                 id1 = await this.genericService.Patch(this.User, controllerName, id, fieldValues);
@@ -87,13 +87,13 @@ namespace BeGeneric.Backend.Controllers
         }
 
         [HttpDelete("{controllerName}/{id}")]
-        public async Task<IActionResult> Delete(string controllerName, Guid id)
+        public async Task<IActionResult> Delete(string controllerName, T id)
         {
             return await GetActionResult(this.genericService.Delete(this.User, controllerName, id));
         }
 
         [HttpDelete("{controllerName}/{id}/{relatedEntityName}/{relatedEntityId}")]
-        public async Task<IActionResult> DeleteRelatedEntity(string controllerName, Guid id, string relatedEntityName, Guid relatedEntityId)
+        public async Task<IActionResult> DeleteRelatedEntity(string controllerName, T id, string relatedEntityName, T relatedEntityId)
         {
             return await GetActionResult(this.genericService.DeleteRelatedEntity(this.User, controllerName, id, relatedEntityName, relatedEntityId));
         }

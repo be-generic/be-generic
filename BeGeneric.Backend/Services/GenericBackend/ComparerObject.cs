@@ -12,11 +12,11 @@ namespace BeGeneric.Backend.Services.BeGeneric
         public string Property { get; set; }
         public object Filter { get; set; }
 
-        public override Tuple<string, int, List<Tuple<string, object>>> ToSQLQuery(string userName, Entity entity, int counter, string originTableAlias, Dictionary<string, SelectPropertyData> joinData)
+        public override Tuple<string, int, List<Tuple<string, object>>> ToSQLQuery(string userName, Entity entity, string dbSchema, int counter, string originTableAlias, Dictionary<string, SelectPropertyData> joinData)
         {
             if (this.Comparisons != null)
             {
-                return base.ToSQLQuery(userName, entity, counter, originTableAlias, joinData);
+                return base.ToSQLQuery(userName, entity, dbSchema, counter, originTableAlias, joinData);
             }
 
             List<Tuple<string, object>> parameters = new();
@@ -29,7 +29,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             }
             else
             {
-                operation = operation.Replace("$property", ResolvePropertyName(entity, originTableAlias));
+                operation = operation.Replace("$property", ResolvePropertyName(entity, dbSchema, originTableAlias));
             }
 
             if (operation.Contains("$filterParam"))
@@ -59,7 +59,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter + 1, parameters);
         }
 
-        public static Tuple<string, int, List<Tuple<string, object>>> ToGroupSQLQuery(List<ComparerObject> comparers, Entity entity, int counter, string originTableAlias)
+        public static Tuple<string, int, List<Tuple<string, object>>> ToGroupSQLQuery(List<ComparerObject> comparers, Entity entity, string dbSchema, int counter, string originTableAlias)
         {
             List<Tuple<string, object>> parameters = new();
 
@@ -84,7 +84,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
                 foreach (var comparer in comparers)
                 {
-                    string propertyName = comparer.ResolvePropertyName(entity, originTableAlias);
+                    string propertyName = comparer.ResolvePropertyName(entity, dbSchema, originTableAlias);
                     if (!isFirstInBatch)
                     {
                         sb.Append($@" OR ");
@@ -107,7 +107,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter + 1, parameters);
         }
 
-        private string ResolvePropertyName(Entity entity, string originTableAlias, string includedFilter = null, Dictionary<string, SelectPropertyData> joinData = null)
+        private string ResolvePropertyName(Entity entity, string dbSchema, string originTableAlias, string includedFilter = null, Dictionary<string, SelectPropertyData> joinData = null)
         {
             var properties = Property.Split(".");
 
@@ -178,7 +178,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                             secondKey = propertyFrom;
                         }
 
-                        sb.Append($@"{GenericDataService.SCHEMA}.[{crossEntity.CrossTableName}] AS fil_cross_tab{i} ");
+                        sb.Append($@"{dbSchema}.[{crossEntity.CrossTableName}] AS fil_cross_tab{i} ");
 
                         if (i > 0)
                         {
@@ -193,7 +193,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                         iterationEntity = crossEntity.Entity1.EntityId != entity1.EntityId ? crossEntity.Entity1 : crossEntity.Entity2;
 
                         sb.Append($@" INNER JOIN ");
-                        sb.Append($@"{GenericDataService.SCHEMA}.[{iterationEntity.TableName}] AS fil_tab{i} ");
+                        sb.Append($@"{dbSchema}.[{iterationEntity.TableName}] AS fil_tab{i} ");
 
                         string key = iterationEntity.Properties.FirstOrDefault(x => x.IsKey).PropertyName ?? "Id";
                         sb.Append($@" ON fil_cross_tab{i}.[{propertyTo}]=fil_tab{i}.{key}");
@@ -213,7 +213,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     if (!referencingProperty && property.ReferencingEntity != null)
                     {
                         iterationEntity = property.ReferencingEntity;
-                        sb.Append($@"{GenericDataService.SCHEMA}.[{iterationEntity.TableName}]");
+                        sb.Append($@"{dbSchema}.[{iterationEntity.TableName}]");
                         sb.Append($@" AS fil_tab{i}");
 
                         if (i > 0)
@@ -229,7 +229,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     else if (referencingProperty)
                     {
                         iterationEntity = property.Entity;
-                        sb.Append($@"{GenericDataService.SCHEMA}.[{iterationEntity.TableName}]");
+                        sb.Append($@"{dbSchema}.[{iterationEntity.TableName}]");
                         sb.Append($@" AS fil_tab{i}");
 
                         if (i > 0)
