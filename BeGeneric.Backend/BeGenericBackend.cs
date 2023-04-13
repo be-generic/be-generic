@@ -2,7 +2,9 @@
 using BeGeneric.Backend.Services.BeGeneric.DatabaseStructure;
 using BeGeneric.Backend.Services.Common;
 using BeGeneric.Backend.Settings;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.FeatureManagement;
 using System.Data;
 using System.Data.SqlClient;
 using System.Text.Json;
@@ -68,7 +70,7 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
 FROM [SCHEMA].ColumnMetadata
 FOR JSON AUTO, INCLUDE_NULL_VALUES";
 
-        public static void AddGenericBackendServices<T>(this IServiceCollection services,
+        public static void AddControllersWithBeGeneric<T>(this IServiceCollection services,
             string connectionString,
             List<EntityDefinition> entityDefinitions,
             List<ColumnMetadataDefinition> metadataDefinitions,
@@ -93,19 +95,35 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
 
             services.AddScoped<IGenericDataService<T>, GenericDataService<T>>();
 
+            Dictionary<string, string> featureConfigutation = new();
+
+            featureConfigutation.Add(typeof(Guid).Name, (typeof(T) == typeof(Guid)).ToString().ToLowerInvariant());
+            featureConfigutation.Add(typeof(int).Name, (typeof(T) == typeof(int)).ToString().ToLowerInvariant());
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(featureConfigutation)
+                .Build();
+
+            services.AddControllers()
+                .ConfigureApplicationPartManager(manager =>
+                {
+                    manager.FeatureProviders.Clear();
+                    manager.FeatureProviders.Add(new GenericControllerFeatureProvider(configuration));
+                });
+
             AttachedActionService<T> attachedActionService = new();
             configureAttachedActionsAction(attachedActionService);
             services.AddSingleton<IAttachedActionService<T>>(attachedActionService);
         }
 
-        public static void AddGenericBackendServices<T>(this IServiceCollection services,
+        public static void AddControllersWithBeGeneric<T>(this IServiceCollection services,
             string connectionString,
             string configDatabaseConnectionString,
             Action<IAttachedActionService<T>> configureAttachedActionsAction,
             string databaseSchema = "dbo",
             string configSchema = "gba")
         {
-            AddGenericBackendServices(services, 
+            AddControllersWithBeGeneric(services, 
                 connectionString, 
                 GetEntityDefinitions(configDatabaseConnectionString, configSchema), 
                 GetMetadataDefinitions(configDatabaseConnectionString, configSchema), 
@@ -113,7 +131,7 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
                 databaseSchema);
         }
 
-        public static void AddGenericBackendServices<T>(this IServiceCollection services,
+        public static void AddControllersWithBeGeneric<T>(this IServiceCollection services,
             string connectionString,
             string entityDefinitionsPath,
             string metadataDefinitionsPath,
@@ -126,7 +144,7 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
             using StreamReader entityReader = new(entityDefinitionsPath);
             List<EntityDefinition> entityDefinitions = JsonSerializer.Deserialize<List<EntityDefinition>>(entityReader.ReadToEnd());
 
-            AddGenericBackendServices(services, connectionString, entityDefinitions, metadataDefinitions, configureAttachedActionsAction, databaseSchema);
+            AddControllersWithBeGeneric(services, connectionString, entityDefinitions, metadataDefinitions, configureAttachedActionsAction, databaseSchema);
         }
 
         private static List<EntityDefinition> GetEntityDefinitions(string connectionString, string schema)
