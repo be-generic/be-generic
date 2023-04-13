@@ -97,8 +97,7 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
 
             Dictionary<string, string> featureConfigutation = new();
 
-            featureConfigutation.Add(typeof(Guid).Name, (typeof(T) == typeof(Guid)).ToString().ToLowerInvariant());
-            featureConfigutation.Add(typeof(int).Name, (typeof(T) == typeof(int)).ToString().ToLowerInvariant());
+            featureConfigutation.Add(typeof(T).Name, "true");
 
             var configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(featureConfigutation)
