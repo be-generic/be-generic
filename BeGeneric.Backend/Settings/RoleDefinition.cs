@@ -2,7 +2,6 @@
 {
     public class RoleDefinition
     {
-        public Guid Id { get; set; }
-        public string Name { get; set; }
+        public string RoleKey { get; set; }
     }
 }
