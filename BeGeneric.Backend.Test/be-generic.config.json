@@ -3,7 +3,7 @@
     "EntityKey": "A8123763-AB44-4CC6-A55F-07469F547F05",
     "TableName": "PerformanceReviews",
     "ObjectName": null,
-    "ControllerName": null,
+    "ControllerName": "performance-review",
     "SoftDeleteColumn": null,
     "Properties": [
       {
@@ -43,7 +43,7 @@
         "ModelPropertyName": "Employee",
         "IsKey": false,
         "IsReadOnly": false,
-        "RelatedModelPropertyName": null,
+        "RelatedModelPropertyName": "Reviews",
         "ReferencingEntityKey": "D8838044-4928-479F-B33F-996775522158"
       }
     ],

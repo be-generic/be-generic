@@ -1146,7 +1146,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 {
                     data.Properties.Add(new Tuple<string, string, string>(prop.Item1, prop.Item2, property.PropertyName));
                 }
-                else if (property.ReferencingEntity != null && prop != null)
+                else if (property.ReferencingEntity != null && prop != null && string.IsNullOrEmpty(property.RelatedModelPropertyName))
                 {
                     List<Tuple<string, string>> referencedProperties = properties
                         .Where(x => x.Item2.Contains('.') && string.Equals(x.Item2.Split(".")[0], property.CamelCaseName()))
@@ -1213,7 +1213,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 {
                     queryBuilder.Append($", tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight} AS {dbStructure.ColumnDelimiterLeft}{property.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
                 }
-                else
+                else if (string.IsNullOrEmpty(property.RelatedModelPropertyName))
                 {
                     queryBuilder.Append($", (JSON_QUERY(({GenerateSelectQuery(property.ReferencingEntity, ref counter, roleName, userName, parameters, $"tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight}")}))) AS {dbStructure.ColumnDelimiterLeft}{property.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
                 }
