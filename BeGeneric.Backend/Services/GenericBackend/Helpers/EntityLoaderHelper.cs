@@ -93,7 +93,7 @@ namespace BeGeneric.Helpers
                 EntitiesEntityId = entityId,
                 Role = new()
                 {
-                    RoleName = roleDefinition.Role.RoleKey,
+                    RoleName = roleDefinition.RoleKey,
                 }
             };
         }

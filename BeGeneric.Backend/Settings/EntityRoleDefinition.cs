@@ -11,6 +11,6 @@
         public string ViewFilter { get; set; }
         public string EditFilter { get; set; }
 
-        public virtual RoleDefinition Role { get; set; }
+        public string RoleKey { get; set; }
     }
 }

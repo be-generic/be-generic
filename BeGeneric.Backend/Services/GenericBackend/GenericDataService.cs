@@ -145,7 +145,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             }
         }
 
-        public async Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC", ComparerObject? filterObject = null)
+        public async Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC", ComparerObject? filterObject = null, SummaryRequestObject[] summaries = null)
         {
             (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, getAll: true);
 
@@ -169,7 +169,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             List<string> entities = new();
             int tabCounter = 0;
-            int totalCount = 0;
+            string totalCount = "0";
 
             List<Tuple<string, object>> permissionsFilterParams = new();
 
@@ -219,13 +219,13 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             SqlConnection connection = this.connection as SqlConnection;
 
-            totalCount = await CountEntityAccess(user, entity, null, filterObject: permissionFilterObject);
+            totalCount = (await AggregateEntityAccess(user, entity, null, filterObject: permissionFilterObject))[0];
 
-            int filteredTotalCount = totalCount;
+            string filteredTotalCount = totalCount;
 
             if (filters != null)
             {
-                filteredTotalCount = (await CountEntityAccess(user, entity, null, filterObjectWithPermissions) as int?) ?? 0;
+                filteredTotalCount = (await AggregateEntityAccess(user, entity, null, filterObjectWithPermissions))[0];
             }
 
             using (SqlCommand command = new(query, connection))
@@ -253,7 +253,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
             string finalResponse = $@"{{
                 ""recordsTotal"": {totalCount},
                 ""recordsFiltered"": {filteredTotalCount},
-                ""data"": {(entitiyList.Length == 0 ? "[]" : entitiyList)}
+                ""data"": {(entitiyList.Length == 0 ? "[]" : entitiyList)},
+                ""summaries"": { (summaries != null ? ("[" + string.Join(", ", await AggregateEntityAccess(user, entity, null, filterObjectWithPermissions, summaries)) + "]") : "[]")}
             }}";
 
             var afterAction = this.attachedActionService.GetAttachedAction(controllerName, ActionType.GetAll, ActionOrderType.After);
@@ -566,14 +567,14 @@ namespace BeGeneric.Backend.Services.BeGeneric
             }
 
             string entityKey = entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey })) == 0)
+            if ((await AggregateEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey }))[0] == "0")
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
 
             // TODO: ADD PREMISSION FILTER !!! IMPORTANT
             string relatedEntityKey = entity1.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity1, null, new ComparerObject() { Filter = relatedEntity.Id.ToString(), Property = relatedEntityKey })) == 0)
+            if ((await AggregateEntityAccess(user, entity1, null, new ComparerObject() { Filter = relatedEntity.Id.ToString(), Property = relatedEntityKey }))[0] == "0")
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
@@ -836,7 +837,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             }
 
             string entityKey = entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey })) == 0)
+            if ((await AggregateEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey }))[0] == "0")
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
@@ -903,14 +904,14 @@ namespace BeGeneric.Backend.Services.BeGeneric
             }
 
             string entityKey = entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey })) == 0)
+            if ((await AggregateEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey }))[0] == "0")
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
 
             // TODO: ADD PREMISSION FILTER !!! IMPORTANT
             string relatedEntityKey = entity1.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity1, null, new ComparerObject() { Filter = relatedEntityId.ToString(), Property = relatedEntityKey })) == 0)
+            if ((await AggregateEntityAccess(user, entity1, null, new ComparerObject() { Filter = relatedEntityId.ToString(), Property = relatedEntityKey }))[0] == "0")
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
@@ -1050,9 +1051,19 @@ namespace BeGeneric.Backend.Services.BeGeneric
             return alteredQuery;
         }
 
-        private async Task<int> CountEntityAccess(ClaimsPrincipal user, Entity entity, string permissionsFilter, ComparerObject filterObject = null)
+        private async Task<string[]> AggregateEntityAccess(ClaimsPrincipal user, Entity entity, string permissionsFilter, ComparerObject filterObject = null, SummaryRequestObject[] summaries = null)
         {
-            string countQuery = @$"SELECT COUNT(*) FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} tab1";
+            string countQuery = "";
+            List<string> summaryNames = new();
+
+            if (summaries == null)
+            {
+                countQuery = @$"SELECT COUNT(*) FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} tab1";
+            }
+            else
+            {
+                countQuery = @$"SELECT {string.Join(", ", ValidateSummaries(entity, summaries, summaryNames))} FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} tab1";
+            }
 
             bool countWhereActivated = false;
 
@@ -1107,7 +1118,55 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 connection.Open();
             }
 
-            return (await command.ExecuteScalarAsync() as int?) ?? 0;
+            if (summaries == null)
+            {
+                return new string[] { ((await command.ExecuteScalarAsync() as int?) ?? 0).ToString() };
+            }
+            else
+            {
+                List<string> result = new();
+                using DbDataReader dr = await command.ExecuteReaderAsync();
+                if (!(await dr.ReadAsync()))
+                {
+                    return null;
+                }
+
+                for (int i = 0; i < summaryNames.Count; i++)
+                {
+                    var tmp = summaryNames[i];
+                    var res = JsonSerializer.Serialize(dr.GetValue(i));
+                    result.Add($@"{tmp} {res} }}");
+                }
+
+                return result.ToArray();
+            }
+        }
+
+        private static string[] ValidateSummaries(Entity entity, SummaryRequestObject[] summaries, List<string> summaryNames)
+        {
+            List<string> data = new();
+            foreach (var summary in summaries)
+            {
+                var property = entity.Properties.Where(x => string.Equals(x.ModelPropertyName ?? x.PropertyName, summary.Property, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                if (property != null)
+                {
+                    string comparison = string.Empty;
+                    comparison = summary.SummaryType switch
+                    {
+                        SummaryTypes.AVG => $"AVG({property.PropertyName})",
+                        SummaryTypes.MIN => $"MIN({property.PropertyName})",
+                        SummaryTypes.MAX => $"MAX({property.PropertyName})",
+                        SummaryTypes.COUNT => $"COUNT({property.PropertyName})",
+                        SummaryTypes.COUNT_DISTINCT => $"COUNT(DISTINCT {property.PropertyName})",
+                        SummaryTypes.SUM => $"SUM({property.PropertyName})"
+                    };
+
+                    data.Add(comparison);
+                    summaryNames.Add($@"{{ ""name"": ""{(property.ModelPropertyName ?? property.PropertyName).CamelCaseName()}"", ""summaryType"": ""{summary.SummaryType}"", ""value"": ");
+                }
+            }
+
+            return data.ToArray();
         }
 
         private List<Tuple<string, string>> GetJoinsForSelect(Entity entity, string? joinProperty, string joinTableName, List<Tuple<string, string>> properties, Dictionary<string, SelectPropertyData> joinData, string? path, ref int counter)

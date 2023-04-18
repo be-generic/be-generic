@@ -1,6 +1,7 @@
 ﻿using BeGeneric.Backend.Services.BeGeneric;
 using BeGeneric.Backend.Services.BeGeneric.Exceptions;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace BeGeneric.Backend.Controllers
@@ -29,9 +30,23 @@ namespace BeGeneric.Backend.Controllers
         }
 
         [HttpPost("{controllerName}/filter")]
-        public async Task<IActionResult> Get(string controllerName, int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC", ComparerObject? filterObject = null)
+        public async Task<IActionResult> Get(string controllerName, int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC", DataRequestObject? dataRequestObject = null)
         {
-            return await GetActionResult(this.genericService.Get(this.User, controllerName, page, pageSize, sortProperty, sortOrder, filterObject));
+            if (!string.IsNullOrEmpty(dataRequestObject?.Property) || !string.IsNullOrEmpty(dataRequestObject?.Conjunction))
+            {
+                return await GetActionResult(this.genericService.Get(this.User, controllerName, page, pageSize, sortProperty, sortOrder, dataRequestObject, dataRequestObject?.Summaries));
+            }
+            else
+            {
+                ComparerObject comparer = null;
+
+                if (dataRequestObject?.Filter != null)
+                {
+                    comparer = JsonSerializer.Deserialize<ComparerObject>(dataRequestObject?.Filter.ToString(), new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+                }
+
+                return await GetActionResult(this.genericService.Get(this.User, controllerName, page, pageSize, sortProperty, sortOrder, comparer, dataRequestObject?.Summaries));
+            }
         }
 
         [HttpPost("{controllerName}")]
