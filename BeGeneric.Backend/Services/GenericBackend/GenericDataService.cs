@@ -254,7 +254,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 ""recordsTotal"": {totalCount},
                 ""recordsFiltered"": {filteredTotalCount},
                 ""data"": {(entitiyList.Length == 0 ? "[]" : entitiyList)},
-                ""summaries"": { (summaries != null ? ("[" + string.Join(", ", await AggregateEntityAccess(user, entity, null, filterObjectWithPermissions, summaries)) + "]") : "[]")}
+                ""aggregation"": { (summaries != null ? ("[" + string.Join(", ", await AggregateEntityAccess(user, entity, null, filterObjectWithPermissions, summaries)) + "]") : "[]")}
             }}";
 
             var afterAction = this.attachedActionService.GetAttachedAction(controllerName, ActionType.GetAll, ActionOrderType.After);
@@ -1151,7 +1151,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 if (property != null)
                 {
                     string comparison = string.Empty;
-                    comparison = summary.SummaryType switch
+                    comparison = summary.AggregationType switch
                     {
                         SummaryTypes.AVG => $"AVG({property.PropertyName})",
                         SummaryTypes.MIN => $"MIN({property.PropertyName})",
@@ -1162,7 +1162,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     };
 
                     data.Add(comparison);
-                    summaryNames.Add($@"{{ ""name"": ""{(property.ModelPropertyName ?? property.PropertyName).CamelCaseName()}"", ""summaryType"": ""{summary.SummaryType}"", ""value"": ");
+                    summaryNames.Add($@"{{ ""name"": ""{(property.ModelPropertyName ?? property.PropertyName).CamelCaseName()}"", ""aggregationType"": ""{summary.AggregationType}"", ""value"": ");
                 }
             }
 

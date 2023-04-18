@@ -3,7 +3,7 @@
     public class SummaryRequestObject
     {
         public string Property { get; set; }
-        public string SummaryType { get; set; }
+        public string AggregationType { get; set; }
     }
 
     public static class SummaryTypes
