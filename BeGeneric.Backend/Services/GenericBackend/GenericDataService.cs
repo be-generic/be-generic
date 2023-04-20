@@ -1134,7 +1134,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 for (int i = 0; i < summaryNames.Count; i++)
                 {
                     var tmp = summaryNames[i];
-                    var res = JsonSerializer.Serialize(dr.GetValue(i));
+                    var tmpValue = dr.GetValue(i);
+                    var res = JsonSerializer.Serialize(tmpValue == DBNull.Value ? null : tmpValue);
                     result.Add($@"{tmp} {res} }}");
                 }
 
@@ -1162,7 +1163,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     };
 
                     data.Add(comparison);
-                    summaryNames.Add($@"{{ ""name"": ""{(property.ModelPropertyName ?? property.PropertyName).CamelCaseName()}"", ""aggregationType"": ""{summary.AggregationType}"", ""value"": ");
+                    summaryNames.Add($@"{{ ""property"": ""{(property.ModelPropertyName ?? property.PropertyName).CamelCaseName()}"", ""aggregationType"": ""{summary.AggregationType}"", ""value"": ");
                 }
             }
 
