@@ -1,8 +1,6 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace BeGeneric.Models
+namespace BeGeneric.Backend.Models
 {
     public class EntityRelation
     {
@@ -30,5 +28,4 @@ namespace BeGeneric.Models
 
         public virtual Entity Entity2 { get; set; }
     }
-
 }

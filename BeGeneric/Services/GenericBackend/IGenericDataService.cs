@@ -11,7 +11,7 @@ namespace BeGeneric.Services.BeGeneric
     {
         Task<string> Get(ClaimsPrincipal user, string controllerName, Guid id);
 
-        Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string sortProperty = null, string sortOrder = "ASC", string filter = null, ComparerObject filterObject = null);
+        Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string sortProperty = null, string sortOrder = "ASC", ComparerObject filterObject = null);
 
         Task<string> Get(ClaimsPrincipal user, Endpoint endpoint, int? page = null, int pageSize = 10, string sortProperty = null, string sortOrder = "ASC", ComparerObject filterObject = null);
 

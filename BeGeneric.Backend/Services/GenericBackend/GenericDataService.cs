@@ -1,55 +1,60 @@
-﻿using BeGeneric.Context;
+﻿using BeGeneric.Backend.Models;
+using BeGeneric.Backend.Services.BeGeneric.DatabaseStructure;
+using BeGeneric.Backend.Services.BeGeneric.Exceptions;
+using BeGeneric.Backend.Settings;
 using BeGeneric.Helpers;
-using BeGeneric.Models;
-using BeGeneric.Services.BeGeneric.DatabaseStructure;
-using BeGeneric.Services.BeGeneric.Exceptions;
-using BeGeneric.Services.Common;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
-using System.Linq;
+using System.Data.SqlClient;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Endpoint = BeGeneric.Models.Endpoint;
+using Endpoint = BeGeneric.Backend.Models.Endpoint;
 
-namespace BeGeneric.Services.BeGeneric
+namespace BeGeneric.Backend.Services.BeGeneric
 {
-    public class GenericDataService : IGenericDataService
+    public class GenericDataService<T> : IGenericDataService<T>
     {
-        protected readonly ControllerDbContext context;
-        protected readonly EntityDbContext entityContext;
+        protected readonly List<Entity> entities;
         protected readonly ILogger logger;
         protected readonly IDatabaseStructureService dbStructure;
-        private readonly IMemoryCacheService memoryCache;
-        private readonly IAttachedActionService attachedActionService;
+        private readonly IAttachedActionService<T> attachedActionService;
+        private readonly IDbConnection connection;
 
-        internal const string SCHEMA = "dbo";
+        internal readonly string dbSchema = "dbo";
 
-        public GenericDataService(ControllerDbContext context,
-            EntityDbContext entityContext,
+        private readonly Dictionary<Type, Func<string, object>> stringParsers = new()
+        {
+            { typeof(int), (x) => int.Parse(x) },
+            { typeof(Guid), (x) => new Guid(x) },
+            { typeof(string), (x) => x },
+        };
+
+        private readonly Dictionary<Type, string> dbTypeParsers = new()
+        {
+            { typeof(int), "INT" },
+            { typeof(Guid), "UNIQUEIDENTIFIER" },
+            { typeof(string), "NVARCHAR(100)" },
+        };
+
+        public GenericDataService(List<EntityDefinition> entityDefinitions,
             IDatabaseStructureService dbStructure,
-            IMemoryCacheService memoryCache,
-            IAttachedActionService attachedActionService,
+            IAttachedActionService<T> attachedActionService,
+            IDbConnection connection,
             ILogger logger = null)
         {
-            this.context = context;
+            entities = entityDefinitions.ProcessEntities();
             this.logger = logger;
             this.dbStructure = dbStructure;
-            this.memoryCache = memoryCache;
+            this.dbSchema = dbStructure.DataSchema;
+            this.connection = connection;
             this.attachedActionService = attachedActionService;
-            this.entityContext = entityContext;
         }
 
-
-        public async Task<string> Get(ClaimsPrincipal user, string controllerName, Guid id)
+        public async Task<string> Get(ClaimsPrincipal user, string controllerName, T id)
         {
             (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, getOne: true);
 
@@ -59,12 +64,11 @@ namespace BeGeneric.Services.BeGeneric
             var action = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Get, ActionOrderType.Before);
             if (action != null)
             {
-                await action(new ActionData()
+                await action(new ActionData<T>()
                 {
                     Id = id,
                     UserName = userName,
-                    Role = roleName,
-                    Context = entityContext
+                    Role = roleName
                 });
             }
 
@@ -82,7 +86,7 @@ namespace BeGeneric.Services.BeGeneric
                 filterObjectWithPermissions = JsonSerializer.Deserialize<ComparerObject>(permissionsFilter, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
             }
 
-            var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, 0, "tab1", null);
+            var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, 0, "tab1", null);
 
             if (filters != null)
             {
@@ -91,7 +95,7 @@ namespace BeGeneric.Services.BeGeneric
 
             query += $" FOR JSON AUTO, INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER";
 
-            SqlConnection connection = context.Database.GetDbConnection() as SqlConnection;
+            SqlConnection connection = this.connection as SqlConnection;
 
             using DbCommand command = new SqlCommand(query, connection);
             command.Parameters.Add(new SqlParameter("tab1_val", id));
@@ -124,13 +128,12 @@ namespace BeGeneric.Services.BeGeneric
                 var afterAction = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Get, ActionOrderType.After);
                 if (afterAction != null)
                 {
-                    await afterAction(new ActionData()
+                    await afterAction(new ActionData<T>()
                     {
                         Id = id,
                         GetOneResultData = finalResponse,
                         UserName = userName,
-                        Role = roleName,
-                        Context = entityContext
+                        Role = roleName
                     });
                 }
 
@@ -142,17 +145,17 @@ namespace BeGeneric.Services.BeGeneric
             }
         }
 
-        public async Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string sortProperty = null, string sortOrder = "ASC", ComparerObject filterObject = null)
+        public async Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC", ComparerObject? filterObject = null, SummaryRequestObject[] summaries = null)
         {
             (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, getAll: true);
 
-            string userName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null;
-            string roleName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null;
+            string? userName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null;
+            string? roleName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null;
 
             var action = this.attachedActionService.GetAttachedAction(controllerName, ActionType.GetAll, ActionOrderType.Before);
             if (action != null)
             {
-                await action(new ActionData()
+                await action(new ActionData<T>()
                 {
                     Page = page,
                     FilterObject = filterObject,
@@ -160,14 +163,13 @@ namespace BeGeneric.Services.BeGeneric
                     SortOrder = sortOrder,
                     SortProperty = sortProperty,
                     UserName = userName,
-                    Role = roleName,
-                    Context = entityContext
+                    Role = roleName
                 });
             }
 
             List<string> entities = new();
             int tabCounter = 0;
-            int totalCount = 0;
+            string totalCount = "0";
 
             List<Tuple<string, object>> permissionsFilterParams = new();
 
@@ -199,7 +201,7 @@ namespace BeGeneric.Services.BeGeneric
             List<SqlParameter> parameters = new();
 
             string query = GenerateSelectQuery(entity, ref tabCounter, roleName, userName, parameters);
-            var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, parameters.Count, "tab1", null);
+            var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, parameters.Count, "tab1", null);
 
             if (filters != null)
             {
@@ -215,15 +217,15 @@ namespace BeGeneric.Services.BeGeneric
 
             query += " FOR JSON AUTO";
 
-            SqlConnection connection = context.Database.GetDbConnection() as SqlConnection;
+            SqlConnection connection = this.connection as SqlConnection;
 
-            totalCount = await CountEntityAccess(user, entity, null, filterObject: permissionFilterObject);
+            totalCount = (await AggregateEntityAccess(user, entity, null, filterObject: permissionFilterObject))[0];
 
-            int filteredTotalCount = totalCount;
+            string filteredTotalCount = totalCount;
 
             if (filters != null)
             {
-                filteredTotalCount = (await CountEntityAccess(user, entity, null, filterObjectWithPermissions) as int?) ?? 0;
+                filteredTotalCount = (await AggregateEntityAccess(user, entity, null, filterObjectWithPermissions))[0];
             }
 
             using (SqlCommand command = new(query, connection))
@@ -251,13 +253,14 @@ namespace BeGeneric.Services.BeGeneric
             string finalResponse = $@"{{
                 ""recordsTotal"": {totalCount},
                 ""recordsFiltered"": {filteredTotalCount},
-                ""data"": {(entitiyList.Length == 0 ? "[]" : entitiyList)}
+                ""data"": {(entitiyList.Length == 0 ? "[]" : entitiyList)},
+                ""aggregation"": { (summaries != null ? ("[" + string.Join(", ", await AggregateEntityAccess(user, entity, null, filterObjectWithPermissions, summaries)) + "]") : "[]")}
             }}";
 
             var afterAction = this.attachedActionService.GetAttachedAction(controllerName, ActionType.GetAll, ActionOrderType.After);
             if (afterAction != null)
             {
-                await afterAction(new ActionData()
+                await afterAction(new ActionData<T>()
                 {
                     Page = page,
                     FilterObject = filterObject,
@@ -266,8 +269,7 @@ namespace BeGeneric.Services.BeGeneric
                     SortProperty = sortProperty,
                     GetAllResultData = finalResponse,
                     UserName = userName,
-                    Role = roleName,
-                    Context = entityContext
+                    Role = roleName
                 });
             }
 
@@ -281,14 +283,13 @@ namespace BeGeneric.Services.BeGeneric
             var action = this.attachedActionService.GetAttachedAction(endpoint.EndpointPath, ActionType.GetAll, ActionOrderType.Before);
             if (action != null)
             {
-                await action(new ActionData()
+                await action(new ActionData<T>()
                 {
                     Page = page,
                     FilterObject = filterObject,
                     PageSize = pageSize,
                     SortOrder = sortOrder,
-                    SortProperty = sortProperty,
-                    Context = entityContext
+                    SortProperty = sortProperty
                 });
             }
 
@@ -324,7 +325,7 @@ namespace BeGeneric.Services.BeGeneric
             Dictionary<string, SelectPropertyData> joinData = new();
             string query = GenerateSelectQuery(entity, endpoint.EndpointProperties.Select(x => new Tuple<string, string>(x.PropertyName, x.PropertyPath)).ToList(), joinData);
 
-            var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, 0, "tab1", joinData);
+            var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, 0, "tab1", joinData);
 
             if (filters != null)
             {
@@ -340,7 +341,7 @@ namespace BeGeneric.Services.BeGeneric
 
             query += " FOR JSON PATH";
 
-            SqlConnection connection = context.Database.GetDbConnection() as SqlConnection;
+            SqlConnection connection = this.connection as SqlConnection;
 
             using (SqlCommand command = new(query, connection))
             {
@@ -368,7 +369,7 @@ namespace BeGeneric.Services.BeGeneric
             var afterAction = this.attachedActionService.GetAttachedAction(endpoint.EndpointPath, ActionType.GetAll, ActionOrderType.After);
             if (afterAction != null)
             {
-                await afterAction(new ActionData()
+                await afterAction(new ActionData<T>()
                 {
                     Page = page,
                     FilterObject = filterObject,
@@ -378,7 +379,6 @@ namespace BeGeneric.Services.BeGeneric
                     GetAllResultData = finalResult,
                     UserName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null,
                     Role = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null,
-                    Context = entityContext
                 });
             }
 
@@ -394,12 +394,11 @@ namespace BeGeneric.Services.BeGeneric
             var action = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Post, ActionOrderType.Before);
             if (action != null)
             {
-                await action(new ActionData()
+                await action(new ActionData<T>()
                 {
                     InputParameterData = JsonSerializer.Serialize(fieldValues),
                     UserName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null,
                     Role = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null,
-                    Context = entityContext
                 });
             }
 
@@ -411,15 +410,15 @@ namespace BeGeneric.Services.BeGeneric
                         (values[(prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant()] as JsonValue) != null));
 
             StringBuilder queryBuilder = new();
-            queryBuilder.AppendLine(@"DECLARE @generated_keys table(id UNIQUEIDENTIFIER);");
-            queryBuilder.Append($"INSERT INTO {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} " +
+            queryBuilder.AppendLine(@$"DECLARE @generated_keys table(id {dbTypeParsers[typeof(T)]});");
+            queryBuilder.Append($"INSERT INTO {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} " +
                 $"({string.Join(", ", usedProperties.Select(x => $"{dbStructure.ColumnDelimiterLeft}{x.PropertyName}{dbStructure.ColumnDelimiterRight}"))})");
             queryBuilder.Append($"OUTPUT inserted.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} INTO @generated_keys ");
             queryBuilder.AppendLine($"VALUES ({string.Join(", ", usedProperties.Select((a, b) => "@PropertyValue" + b.ToString()))})");
 
             queryBuilder.AppendLine(@"SELECT * FROM @generated_keys");
 
-            SqlConnection connection = context.Database.GetDbConnection() as SqlConnection;
+            SqlConnection connection = this.connection as SqlConnection;
 
             using DbCommand command = new SqlCommand(queryBuilder.ToString(), connection);
             int i = 0;
@@ -493,7 +492,7 @@ namespace BeGeneric.Services.BeGeneric
                 using DbDataReader sr = await command.ExecuteReaderAsync();
                 if (await sr.ReadAsync())
                 {
-                    Guid newId = sr.GetFieldValue<Guid>(0);
+                    T newId = sr.GetFieldValue<T>(0);
 
                     StringBuilder qb2 = new();
                     foreach (var crossEntity in entity.EntityRelations1)
@@ -522,14 +521,13 @@ namespace BeGeneric.Services.BeGeneric
                     var afterAction = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Post, ActionOrderType.After);
                     if (afterAction != null)
                     {
-                        await afterAction(new ActionData()
+                        await afterAction(new ActionData<T>()
                         {
                             Id = newId,
                             SavedParameterData = savedEntity,
                             InputParameterData = JsonSerializer.Serialize(fieldValues),
                             UserName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null,
                             Role = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null,
-                            Context = entityContext
                         });
                     }
 
@@ -546,7 +544,7 @@ namespace BeGeneric.Services.BeGeneric
             }
         }
 
-        public async Task PostRelatedEntity(ClaimsPrincipal user, string controllerName, Guid id, string relatedEntityName, RelatedEntityObject relatedEntity)
+        public async Task PostRelatedEntity(ClaimsPrincipal user, string controllerName, T id, string relatedEntityName, RelatedEntityObject relatedEntity)
         {
             (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, post: true);
 
@@ -569,20 +567,20 @@ namespace BeGeneric.Services.BeGeneric
             }
 
             string entityKey = entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey })) == 0)
+            if ((await AggregateEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey }))[0] == "0")
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
 
             // TODO: ADD PREMISSION FILTER !!! IMPORTANT
             string relatedEntityKey = entity1.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity1, null, new ComparerObject() { Filter = relatedEntity.Id.ToString(), Property = relatedEntityKey })) == 0)
+            if ((await AggregateEntityAccess(user, entity1, null, new ComparerObject() { Filter = relatedEntity.Id.ToString(), Property = relatedEntityKey }))[0] == "0")
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
 
             StringBuilder queryBuilder = new();
-            queryBuilder.Append($"INSERT INTO {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} (");
+            queryBuilder.Append($"INSERT INTO {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} (");
             if (!string.IsNullOrEmpty(crossEntity.ValidFromColumnName))
             {
                 queryBuilder.Append($"{dbStructure.ColumnDelimiterLeft}{crossEntity.ValidFromColumnName}{dbStructure.ColumnDelimiterRight}, ");
@@ -598,7 +596,7 @@ namespace BeGeneric.Services.BeGeneric
 
             queryBuilder.Append($"'{id}', '{relatedEntity.Id}')");
 
-            SqlConnection connection = context.Database.GetDbConnection() as SqlConnection;
+            SqlConnection connection = this.connection as SqlConnection;
 
             try
             {
@@ -616,7 +614,7 @@ namespace BeGeneric.Services.BeGeneric
             }
         }
 
-        public async Task<Guid> Patch(ClaimsPrincipal user, string controllerName, Guid? id, Dictionary<string, JsonNode> fieldValues)
+        public async Task<T> Patch(ClaimsPrincipal user, string controllerName, T? id, Dictionary<string, JsonNode> fieldValues)
         {
             Dictionary<string, JsonNode> values = new(fieldValues.Select(x => new KeyValuePair<string, JsonNode>(x.Key.ToLowerInvariant(), x.Value)));
 
@@ -625,13 +623,12 @@ namespace BeGeneric.Services.BeGeneric
             var action = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Patch, ActionOrderType.Before);
             if (action != null)
             {
-                await action(new ActionData()
+                await action(new ActionData<T>()
                 {
-                    Id = id ?? new Guid(values[entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.ToLowerInvariant() ?? "id"].ToString()),
+                    Id = id ?? (T)stringParsers[typeof(T)]((values[entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.ToLowerInvariant() ?? "id"].ToString())),
                     InputParameterData = JsonSerializer.Serialize(fieldValues),
                     UserName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null,
                     Role = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null,
-                    Context = entityContext
                 });
             }
 
@@ -692,7 +689,7 @@ namespace BeGeneric.Services.BeGeneric
             }
 
             StringBuilder queryBuilder = new();
-            queryBuilder.Append($"UPDATE {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} " +
+            queryBuilder.Append($"UPDATE {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} " +
                 $"SET {string.Join($", ", properties.Where(x => values.ContainsKey(x.CamelCaseName().ToLowerInvariant())).Select((x, i) => $"{dbStructure.ColumnDelimiterLeft}{x.PropertyName}{dbStructure.ColumnDelimiterRight}=@PropertyValue" + i.ToString()))}");
             queryBuilder.Append($" WHERE {entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}=@ID");
 
@@ -711,24 +708,24 @@ namespace BeGeneric.Services.BeGeneric
                 filterObjectWithPermissions = JsonSerializer.Deserialize<ComparerObject>(permissionsFilter, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
             }
 
-            var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, 0, $"{SCHEMA}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight}", null);
+            var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, 0, $"{dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight}", null);
 
             if (filters != null)
             {
                 queryBuilder.Append($" AND {filters.Item1}");
             }
 
-            SqlConnection connection = context.Database.GetDbConnection() as SqlConnection;
-            Guid id1;
+            SqlConnection connection = this.connection as SqlConnection;
+            T id1;
             using DbCommand command = new SqlCommand(queryBuilder.ToString(), connection);
-            if (id.HasValue)
+            if (id != null)
             {
-                id1 = id.Value;
-                command.Parameters.Add(new SqlParameter("ID", id.Value));
+                id1 = id;
+                command.Parameters.Add(new SqlParameter("ID", id));
             }
             else
             {
-                id1 = new Guid(values[entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.ToLowerInvariant() ?? "id"].ToString());
+                id1 = (T)stringParsers[typeof(T)](values[entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.ToLowerInvariant() ?? "id"].ToString());
                 command.Parameters.Add(new SqlParameter("ID", values[entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.ToLowerInvariant() ?? "id"].ToString()));
             }
 
@@ -811,38 +808,36 @@ namespace BeGeneric.Services.BeGeneric
             var afterAction = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Patch, ActionOrderType.After);
             if (afterAction != null)
             {
-                await afterAction(new ActionData()
+                await afterAction(new ActionData<T>()
                 {
                     Id = id1,
                     InputParameterData = JsonSerializer.Serialize(values),
                     SavedParameterData = await Get(user, controllerName, id1),
                     UserName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null,
                     Role = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null,
-                    Context = entityContext
                 });
             }
 
             return id1;
         }
 
-        public async Task Delete(ClaimsPrincipal user, string controllerName, Guid id)
+        public async Task Delete(ClaimsPrincipal user, string controllerName, T id)
         {
             (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, delete: true);
 
             var action = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Delete, ActionOrderType.Before);
             if (action != null)
             {
-                await action(new ActionData()
+                await action(new ActionData<T>()
                 {
                     Id = id,
                     UserName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null,
                     Role = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null,
-                    Context = entityContext
                 });
             }
 
             string entityKey = entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey })) == 0)
+            if ((await AggregateEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey }))[0] == "0")
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
@@ -850,16 +845,16 @@ namespace BeGeneric.Services.BeGeneric
             StringBuilder queryBuilder = new();
             if (entity.SoftDeleteColumn == null)
             {
-                queryBuilder.Append($"DELETE FROM {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} ");
+                queryBuilder.Append($"DELETE FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} ");
             }
             else
             {
-                queryBuilder.Append($"UPDATE {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} SET {dbStructure.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{dbStructure.ColumnDelimiterRight} = 1 ");
+                queryBuilder.Append($"UPDATE {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} SET {dbStructure.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{dbStructure.ColumnDelimiterRight} = 1 ");
             }
 
             queryBuilder.Append($"WHERE {dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight}=@ID");
 
-            SqlConnection connection = context.Database.GetDbConnection() as SqlConnection;
+            SqlConnection connection = this.connection as SqlConnection;
 
             using DbCommand command = new SqlCommand(queryBuilder.ToString(), connection);
             command.Parameters.Add(new SqlParameter("ID", id));
@@ -876,18 +871,17 @@ namespace BeGeneric.Services.BeGeneric
             var afterAction = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Delete, ActionOrderType.After);
             if (afterAction != null)
             {
-                await afterAction(new ActionData()
+                await afterAction(new ActionData<T>()
                 {
                     Id = id,
                     UserName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null,
                     Role = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null,
-                    Context = entityContext,
                     InputParameterData = oneEntry
                 });
             }
         }
 
-        public async Task DeleteRelatedEntity(ClaimsPrincipal user, string controllerName, Guid id, string relatedEntityName, Guid relatedEntityId)
+        public async Task DeleteRelatedEntity(ClaimsPrincipal user, string controllerName, T id, string relatedEntityName, T relatedEntityId)
         {
             (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, delete: true);
 
@@ -910,14 +904,14 @@ namespace BeGeneric.Services.BeGeneric
             }
 
             string entityKey = entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey })) == 0)
+            if ((await AggregateEntityAccess(user, entity, permissionsFilter, new ComparerObject() { Filter = id.ToString(), Property = entityKey }))[0] == "0")
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
 
             // TODO: ADD PREMISSION FILTER !!! IMPORTANT
             string relatedEntityKey = entity1.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-            if ((await CountEntityAccess(user, entity1, null, new ComparerObject() { Filter = relatedEntityId.ToString(), Property = relatedEntityKey })) == 0)
+            if ((await AggregateEntityAccess(user, entity1, null, new ComparerObject() { Filter = relatedEntityId.ToString(), Property = relatedEntityKey }))[0] == "0")
             {
                 throw new GenericBackendSecurityException(SecurityStatus.NotFound);
             }
@@ -926,12 +920,12 @@ namespace BeGeneric.Services.BeGeneric
             if (string.IsNullOrEmpty(crossEntity.ActiveColumnName) &&
                 string.IsNullOrEmpty(crossEntity.ValidToColumnName))
             {
-                queryBuilder.Append($"DELETE FROM {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} ");
+                queryBuilder.Append($"DELETE FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} ");
             }
 
             if (!string.IsNullOrEmpty(crossEntity.ActiveColumnName))
             {
-                queryBuilder.Append($"UPDATE {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} SET {dbStructure.ColumnDelimiterLeft}{crossEntity.ActiveColumnName}{dbStructure.ColumnDelimiterRight} = 0");
+                queryBuilder.Append($"UPDATE {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} SET {dbStructure.ColumnDelimiterLeft}{crossEntity.ActiveColumnName}{dbStructure.ColumnDelimiterRight} = 0");
 
                 if (!string.IsNullOrEmpty(crossEntity.ValidToColumnName))
                 {
@@ -940,12 +934,12 @@ namespace BeGeneric.Services.BeGeneric
             }
             else if (!string.IsNullOrEmpty(crossEntity.ValidToColumnName))
             {
-                queryBuilder.Append($"UPDATE {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} SET {dbStructure.ColumnDelimiterLeft}{crossEntity.ValidToColumnName}{dbStructure.ColumnDelimiterRight} = GETDATE()");
+                queryBuilder.Append($"UPDATE {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} SET {dbStructure.ColumnDelimiterLeft}{crossEntity.ValidToColumnName}{dbStructure.ColumnDelimiterRight} = GETDATE()");
             }
 
             queryBuilder.Append($" WHERE {dbStructure.ColumnDelimiterLeft}{propertyFrom}{dbStructure.ColumnDelimiterRight}='{id}' AND {dbStructure.ColumnDelimiterLeft}{propertyTo}{dbStructure.ColumnDelimiterRight}='{relatedEntityId}'");
 
-            SqlConnection connection = context.Database.GetDbConnection() as SqlConnection;
+            SqlConnection connection = this.connection as SqlConnection;
 
             using DbCommand command = new SqlCommand(queryBuilder.ToString(), connection);
 
@@ -957,7 +951,7 @@ namespace BeGeneric.Services.BeGeneric
             await command.ExecuteNonQueryAsync();
         }
 
-        private void PrepareCrossEntityInsertQuery(Dictionary<string, JsonNode> values, Guid newId, StringBuilder qb2, EntityRelation crossEntity, bool reverseProperties = false, bool clearRelations = false)
+        private void PrepareCrossEntityInsertQuery(Dictionary<string, JsonNode> values, T newId, StringBuilder qb2, EntityRelation crossEntity, bool reverseProperties = false, bool clearRelations = false)
         {
             string entity1PropertyName = reverseProperties ? crossEntity.Entity2PropertyName : crossEntity.Entity1PropertyName;
             Entity entity = reverseProperties ? crossEntity.Entity1 : crossEntity.Entity2;
@@ -977,17 +971,17 @@ namespace BeGeneric.Services.BeGeneric
                     {
                         if (!string.IsNullOrEmpty(crossEntity.ValidToColumnName))
                         {
-                            qb2.Append($"UPDATE {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} SET ");
+                            qb2.Append($"UPDATE {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} SET ");
                             qb2.Append($"{dbStructure.ColumnDelimiterLeft}{crossEntity.ValidFromColumnName}{dbStructure.ColumnDelimiterRight} = GETDATE() ");
                         }
                         else if (!string.IsNullOrEmpty(crossEntity.ActiveColumnName))
                         {
-                            qb2.Append($"UPDATE {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} SET ");
+                            qb2.Append($"UPDATE {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} SET ");
                             qb2.Append($"{dbStructure.ColumnDelimiterLeft}{crossEntity.ActiveColumnName}{dbStructure.ColumnDelimiterRight} = 0 ");
                         }
                         else
                         {
-                            qb2.Append($"DELETE FROM {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} ");
+                            qb2.Append($"DELETE FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} ");
                         }
 
                         qb2.AppendLine($"WHERE {dbStructure.ColumnDelimiterLeft}{entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = '{newId}'");
@@ -1008,7 +1002,7 @@ namespace BeGeneric.Services.BeGeneric
                            WHERE {dbStructure.ColumnDelimiterLeft}{entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = '{newId}'
                            AND {dbStructure.ColumnDelimiterLeft}{entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = '{refId}')");
 
-                        qb2.Append($"INSERT INTO {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} (");
+                        qb2.Append($"INSERT INTO {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} (");
                         if (!string.IsNullOrEmpty(crossEntity.ValidFromColumnName))
                         {
                             qb2.Append($"{dbStructure.ColumnDelimiterLeft}{crossEntity.ValidFromColumnName}{dbStructure.ColumnDelimiterRight}, ");
@@ -1057,9 +1051,19 @@ namespace BeGeneric.Services.BeGeneric
             return alteredQuery;
         }
 
-        private async Task<int> CountEntityAccess(ClaimsPrincipal user, Entity entity, string permissionsFilter, ComparerObject filterObject = null)
+        private async Task<string[]> AggregateEntityAccess(ClaimsPrincipal user, Entity entity, string permissionsFilter, ComparerObject filterObject = null, SummaryRequestObject[] summaries = null)
         {
-            string countQuery = @$"SELECT COUNT(*) FROM {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} tab1";
+            string countQuery = "";
+            List<string> summaryNames = new();
+
+            if (summaries == null)
+            {
+                countQuery = @$"SELECT COUNT(*) FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} tab1";
+            }
+            else
+            {
+                countQuery = @$"SELECT {string.Join(", ", ValidateSummaries(entity, summaries, summaryNames))} FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} tab1";
+            }
 
             bool countWhereActivated = false;
 
@@ -1092,7 +1096,7 @@ namespace BeGeneric.Services.BeGeneric
                 }
             }
 
-            var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, 0, "tab1", null);
+            var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, 0, "tab1", null);
 
             if (filters != null)
             {
@@ -1101,7 +1105,7 @@ namespace BeGeneric.Services.BeGeneric
                 countQuery += ")";
             }
 
-            SqlConnection connection = context.Database.GetDbConnection() as SqlConnection;
+            SqlConnection connection = this.connection as SqlConnection;
 
             using SqlCommand command = new(countQuery, connection);
             if (filterObjectWithPermissions != null)
@@ -1114,10 +1118,59 @@ namespace BeGeneric.Services.BeGeneric
                 connection.Open();
             }
 
-            return (await command.ExecuteScalarAsync() as int?) ?? 0;
+            if (summaries == null)
+            {
+                return new string[] { ((await command.ExecuteScalarAsync() as int?) ?? 0).ToString() };
+            }
+            else
+            {
+                List<string> result = new();
+                using DbDataReader dr = await command.ExecuteReaderAsync();
+                if (!(await dr.ReadAsync()))
+                {
+                    return null;
+                }
+
+                for (int i = 0; i < summaryNames.Count; i++)
+                {
+                    var tmp = summaryNames[i];
+                    var tmpValue = dr.GetValue(i);
+                    var res = JsonSerializer.Serialize(tmpValue == DBNull.Value ? null : tmpValue);
+                    result.Add($@"{tmp} {res} }}");
+                }
+
+                return result.ToArray();
+            }
         }
 
-        private List<Tuple<string, string>> GetJoinsForSelect(Entity entity, string joinProperty, string joinTableName, List<Tuple<string, string>> properties, Dictionary<string, SelectPropertyData> joinData, string path, ref int counter)
+        private static string[] ValidateSummaries(Entity entity, SummaryRequestObject[] summaries, List<string> summaryNames)
+        {
+            List<string> data = new();
+            foreach (var summary in summaries)
+            {
+                var property = entity.Properties.Where(x => string.Equals(x.ModelPropertyName ?? x.PropertyName, summary.Property, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                if (property != null)
+                {
+                    string comparison = string.Empty;
+                    comparison = summary.AggregationType switch
+                    {
+                        SummaryTypes.AVG => $"AVG({property.PropertyName})",
+                        SummaryTypes.MIN => $"MIN({property.PropertyName})",
+                        SummaryTypes.MAX => $"MAX({property.PropertyName})",
+                        SummaryTypes.COUNT => $"COUNT({property.PropertyName})",
+                        SummaryTypes.COUNT_DISTINCT => $"COUNT(DISTINCT {property.PropertyName})",
+                        SummaryTypes.SUM => $"SUM({property.PropertyName})"
+                    };
+
+                    data.Add(comparison);
+                    summaryNames.Add($@"{{ ""property"": ""{(property.ModelPropertyName ?? property.PropertyName).CamelCaseName()}"", ""aggregationType"": ""{summary.AggregationType}"", ""value"": ");
+                }
+            }
+
+            return data.ToArray();
+        }
+
+        private List<Tuple<string, string>> GetJoinsForSelect(Entity entity, string? joinProperty, string joinTableName, List<Tuple<string, string>> properties, Dictionary<string, SelectPropertyData> joinData, string? path, ref int counter)
         {
             string tableName = $"tab{++counter}";
             var data = new SelectPropertyData()
@@ -1153,7 +1206,7 @@ namespace BeGeneric.Services.BeGeneric
                 {
                     data.Properties.Add(new Tuple<string, string, string>(prop.Item1, prop.Item2, property.PropertyName));
                 }
-                else if (property.ReferencingEntity != null && prop != null)
+                else if (property.ReferencingEntity != null && prop != null && string.IsNullOrEmpty(property.RelatedModelPropertyName))
                 {
                     List<Tuple<string, string>> referencedProperties = properties
                         .Where(x => x.Item2.Contains('.') && string.Equals(x.Item2.Split(".")[0], property.CamelCaseName()))
@@ -1186,7 +1239,7 @@ namespace BeGeneric.Services.BeGeneric
                 }
             }
 
-            queryBuilder.AppendLine($" FROM {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} AS tab1 ");
+            queryBuilder.AppendLine($" FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} AS tab1 ");
 
             foreach (var data in joinData.Where(x => !string.IsNullOrEmpty(x.Value.JoinPropertyName)))
             {
@@ -1220,7 +1273,7 @@ namespace BeGeneric.Services.BeGeneric
                 {
                     queryBuilder.Append($", tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight} AS {dbStructure.ColumnDelimiterLeft}{property.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
                 }
-                else
+                else if (string.IsNullOrEmpty(property.RelatedModelPropertyName))
                 {
                     queryBuilder.Append($", (JSON_QUERY(({GenerateSelectQuery(property.ReferencingEntity, ref counter, roleName, userName, parameters, $"tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight}")}))) AS {dbStructure.ColumnDelimiterLeft}{property.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
                 }
@@ -1255,7 +1308,7 @@ namespace BeGeneric.Services.BeGeneric
                 }
 
                 queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity2, ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{relation.Entity2.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} IN (SELECT {dbStructure.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} FROM " +
-                    $"{SCHEMA}.{dbStructure.ColumnDelimiterLeft}{relation.CrossTableName}{dbStructure.ColumnDelimiterRight} WHERE {dbStructure.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} {whereQueryAddition}) " +
+                    $"{dbSchema}.{dbStructure.ColumnDelimiterLeft}{relation.CrossTableName}{dbStructure.ColumnDelimiterRight} WHERE {dbStructure.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} {whereQueryAddition}) " +
                     $"FOR JSON AUTO, INCLUDE_NULL_VALUES) AS {dbStructure.ColumnDelimiterLeft}{relation.Entity1PropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
             }
 
@@ -1289,12 +1342,12 @@ namespace BeGeneric.Services.BeGeneric
 
                 queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity1, ref counter, roleName, userName, parameters)} AND " +
                     $"{dbStructure.ColumnDelimiterLeft}{relation.Entity1.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} IN " +
-                    $"(SELECT {dbStructure.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} FROM {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{relation.CrossTableName}{dbStructure.ColumnDelimiterRight} " +
+                    $"(SELECT {dbStructure.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{relation.CrossTableName}{dbStructure.ColumnDelimiterRight} " +
                     $"WHERE {dbStructure.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} {whereQueryAddition}) FOR JSON AUTO, INCLUDE_NULL_VALUES) " +
                     $"AS {dbStructure.ColumnDelimiterLeft}{relation.Entity2PropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
             }
 
-            queryBuilder.AppendLine($" FROM {SCHEMA}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} AS tab{internalCounter} ");
+            queryBuilder.AppendLine($" FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} AS tab{internalCounter} ");
 
             if (filterProperty != null)
             {
@@ -1317,7 +1370,7 @@ namespace BeGeneric.Services.BeGeneric
             if (!string.IsNullOrEmpty(filter))
             {
                 var permissionFilterObject = JsonSerializer.Deserialize<ComparerObject>(filter, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
-                var filters = permissionFilterObject?.ToSQLQuery(userName, entity, parameters.Count, $"tab{internalCounter}", null);
+                var filters = permissionFilterObject?.ToSQLQuery(userName, entity, dbSchema, parameters.Count, $"tab{internalCounter}", null);
 
                 if (filters != null)
                 {
@@ -1386,8 +1439,6 @@ namespace BeGeneric.Services.BeGeneric
             bool put = false,
             bool delete = false)
         {
-            var entities = SetupEntityMemoryCache();
-
             List<Entity> entityList = entities
                 .Where(x => controllerName != null && x.ControllerName != null && x.ControllerName.ToLower() == controllerName.ToLower()).ToList();
 
@@ -1479,54 +1530,6 @@ namespace BeGeneric.Services.BeGeneric
 
             return permissionsFilter;
         }
-
-        public async Task<Endpoint> GetEndpoint(string endpointPath)
-        {
-            memoryCache.TryGetEndpoints(out List<Endpoint> endpoints, () =>
-            {
-                endpoints = context.Endpoints
-                    .Include(x => x.StartingEntity)
-                        .ThenInclude(x => x.Properties)
-                    .Include(x => x.EndpointProperties)
-                    .AsNoTrackingWithIdentityResolution()
-                    .ToList();
-
-                return endpoints;
-            });
-
-            return endpoints.FirstOrDefault(x => string.Equals(x.EndpointPath, endpointPath, StringComparison.OrdinalIgnoreCase));
-        }
-
-        private List<Entity> SetupEntityMemoryCache()
-        {
-            memoryCache.TryGetEntities(out List<Entity> entities, () =>
-            {
-                context.Properties.Load();
-                context.Roles.Load();
-                context.Accounts.Load();
-                context.EntityRelations.Load();
-
-                foreach (var role in context.Roles.ToArray())
-                {
-                    context.Entry(role).Collection(r => r.Accounts).Load();
-                }
-
-                entities = context.Entities
-                    .Include(x => x.Properties)
-                    .Include(x => x.ReferencingProperties)
-                        .ThenInclude(x => x.Entity)
-                    .Include(x => x.ReferencingProperties)
-                    .Include(x => x.EntityRoles)
-                        .ThenInclude(x => x.Role)
-                    .Include(x => x.EntityRelations1)
-                    .Include(x => x.EntityRelations2)
-                    .ToList();
-
-                return entities;
-            });
-
-            return entities;
-        }
     }
 
     public class RelatedEntityObject
@@ -1536,12 +1539,12 @@ namespace BeGeneric.Services.BeGeneric
 
     public record SelectPropertyData
     {
-        public string JoinTableName { get; set; }
-        public string JoinPropertyName { get; set; }
-        public string OriginalTableName { get; set; }
-        public string TableName { get; set; }
-        public string IdPropertyName { get; set; }
-        public string TableDTOName { get; set; }
-        public List<Tuple<string, string, string>> Properties { get; set; }
+        public string? JoinTableName { get; set; }
+        public string? JoinPropertyName { get; set; }
+        public string? OriginalTableName { get; set; }
+        public string? TableName { get; set; }
+        public string? IdPropertyName { get; set; }
+        public string? TableDTOName { get; set; }
+        public List<Tuple<string, string, string>>? Properties { get; set; }
     }
 }

@@ -11,9 +11,7 @@
     [ValidToColumnName]            NVARCHAR (MAX)   NULL,
     [ActiveColumnName]             NVARCHAR (MAX)   NULL,
     [ShowInEntity1]             BIT              CONSTRAINT [DF_EntityRelation_ShowInEntity1] DEFAULT ((1)) NOT NULL,
-    [ShowInEntity1Min]             BIT              CONSTRAINT [DF_EntityRelation_ShowInEntity1Min] DEFAULT ((0)) NOT NULL,
     [ShowInEntity2]             BIT              CONSTRAINT [DF_EntityRelation_ShowInEntity2] DEFAULT ((1)) NOT NULL,
-    [ShowInEntity2Min]             BIT              CONSTRAINT [DF_EntityRelation_ShowInEntity2Min] DEFAULT ((0)) NOT NULL,
     CONSTRAINT [PK_EntityRelation] PRIMARY KEY CLUSTERED ([EntityRelationId] ASC),
     CONSTRAINT [FK_EntityRelation_Entities_1] FOREIGN KEY ([Entity1Id]) REFERENCES [gba].[Entities] ([EntityId]),
     CONSTRAINT [FK_EntityRelation_Entities_2] FOREIGN KEY ([Entity2Id]) REFERENCES [gba].[Entities] ([EntityId])
