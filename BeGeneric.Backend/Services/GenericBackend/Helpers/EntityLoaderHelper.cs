@@ -6,6 +6,7 @@ namespace BeGeneric.Helpers
     internal static class EntityLoaderHelper
     {
         private static Dictionary<string, Guid> entityIds = new Dictionary<string, Guid>();
+        private static object lockObject = new object();
 
         private static string GetEntityDefinitionKey(EntityDefinition entity)
         {
@@ -14,11 +15,15 @@ namespace BeGeneric.Helpers
 
         internal static List<Entity> ProcessEntities(this IEnumerable<EntityDefinition> entities)
         {
-            entityIds.Clear();
-
-            foreach (var entity in entities)
+            lock (lockObject)
             {
-                entityIds.Add(GetEntityDefinitionKey(entity), Guid.NewGuid());
+                if (entityIds.Count == 0)
+                { 
+                    foreach (var entity in entities)
+                    {
+                        entityIds.Add(GetEntityDefinitionKey(entity), Guid.NewGuid());
+                    }
+                }
             }
 
             List<Entity> entitiesList = new();
@@ -54,7 +59,7 @@ namespace BeGeneric.Helpers
             return new Entity()
             {
                 ControllerName = entity.ControllerName,
-                EntityRelations1 = entity.EntityRelations.Select(x => x.ToEntityRelation(id)).ToList(),
+                EntityRelations1 = entity.EntityRelations != null ? entity.EntityRelations.Select(x => x.ToEntityRelation(id)).ToList() : new List<EntityRelation>(),
                 EntityRoles = entity.EntityRoles.Select(x => x.ToEntityRole(id)).ToList(),
                 ObjectName = entity.ObjectName,
                 Properties = entity.Properties.Select(x => x.ToProperty(id)).ToList(),

@@ -7,7 +7,7 @@ using System.Text.Json.Nodes;
 namespace BeGeneric.Backend.Controllers
 {
     [ApiController]
-    [Route("")]
+    [Route("", Order = int.MaxValue)]
     public class GenericController<T> : BaseController
     {
         private readonly IGenericDataService<T> genericService;

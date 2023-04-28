@@ -72,19 +72,18 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
 
         public static void AddControllersWithBeGeneric<T>(this IServiceCollection services,
             string connectionString,
-            List<EntityDefinition> entityDefinitions,
-            List<ColumnMetadataDefinition> metadataDefinitions,
-            Action<IAttachedActionService<T>> configureAttachedActionsAction,
+            BeConfiguration configuration,
+            Action<IAttachedActionService<T>> configureAttachedActionsAction = null,
             string databaseSchema = "dbo")
         {
-            IDatabaseStructureService databaseStructureService = new MsSqlDatabaseStructureService(connectionString, databaseSchema, metadataDefinitions)
+            IDatabaseStructureService databaseStructureService = new MsSqlDatabaseStructureService(connectionString, databaseSchema, configuration.Metadata)
             {
                 DataSchema = databaseSchema
             };
 
             services.AddSingleton(databaseStructureService);
             services.AddSingleton<IMemoryCacheService, MemoryCacheService>();
-            services.AddSingleton(entityDefinitions);
+            services.AddSingleton(configuration.Entities);
 
             services.AddScoped<IDbConnection>((x) =>
             {
@@ -99,7 +98,7 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
 
             featureConfigutation.Add(typeof(T).Name, "true");
 
-            var configuration = new ConfigurationBuilder()
+            var configurationBuild = new ConfigurationBuilder()
                 .AddInMemoryCollection(featureConfigutation)
                 .Build();
 
@@ -107,43 +106,48 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
                 .ConfigureApplicationPartManager(manager =>
                 {
                     manager.FeatureProviders.Clear();
-                    manager.FeatureProviders.Add(new GenericControllerFeatureProvider(configuration));
+                    manager.FeatureProviders.Add(new GenericControllerFeatureProvider(configurationBuild));
                 });
 
             AttachedActionService<T> attachedActionService = new();
-            configureAttachedActionsAction(attachedActionService);
+            if (configureAttachedActionsAction != null)
+            {
+                configureAttachedActionsAction(attachedActionService);
+            }
+
             services.AddSingleton<IAttachedActionService<T>>(attachedActionService);
         }
 
-        public static void AddControllersWithBeGeneric<T>(this IServiceCollection services,
+        public static void AddControllersWithBeGenericSql<T>(this IServiceCollection services,
             string connectionString,
             string configDatabaseConnectionString,
-            Action<IAttachedActionService<T>> configureAttachedActionsAction,
+            Action<IAttachedActionService<T>> configureAttachedActionsAction = null,
             string databaseSchema = "dbo",
             string configSchema = "gba")
         {
             AddControllersWithBeGeneric(services, 
                 connectionString, 
-                GetEntityDefinitions(configDatabaseConnectionString, configSchema), 
-                GetMetadataDefinitions(configDatabaseConnectionString, configSchema), 
+                new BeConfiguration() {
+                    Entities = GetEntityDefinitions(configDatabaseConnectionString, configSchema),
+                    Metadata = GetMetadataDefinitions(configDatabaseConnectionString, configSchema),
+                },
                 configureAttachedActionsAction,
                 databaseSchema);
         }
 
         public static void AddControllersWithBeGeneric<T>(this IServiceCollection services,
             string connectionString,
-            string entityDefinitionsPath,
-            string metadataDefinitionsPath,
-            Action<IAttachedActionService<T>> configureAttachedActionsAction,
+            string configurationPath,
+            Action<IAttachedActionService<T>> configureAttachedActionsAction = null,
             string databaseSchema = "dbo")
         {
-            using StreamReader metadataReader = new(metadataDefinitionsPath);
-            List<ColumnMetadataDefinition> metadataDefinitions = JsonSerializer.Deserialize<List<ColumnMetadataDefinition>>(metadataReader.ReadToEnd());
+            using StreamReader metadataReader = new(configurationPath);
+            BeConfiguration configuration = JsonSerializer.Deserialize<BeConfiguration>(metadataReader.ReadToEnd(), new JsonSerializerOptions()
+            {
+                PropertyNameCaseInsensitive = true
+            });
 
-            using StreamReader entityReader = new(entityDefinitionsPath);
-            List<EntityDefinition> entityDefinitions = JsonSerializer.Deserialize<List<EntityDefinition>>(entityReader.ReadToEnd());
-
-            AddControllersWithBeGeneric(services, connectionString, entityDefinitions, metadataDefinitions, configureAttachedActionsAction, databaseSchema);
+            AddControllersWithBeGeneric(services, connectionString, configuration, configureAttachedActionsAction, databaseSchema);
         }
 
         private static List<EntityDefinition> GetEntityDefinitions(string connectionString, string schema)
