@@ -70,7 +70,7 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
 FROM [SCHEMA].ColumnMetadata
 FOR JSON AUTO, INCLUDE_NULL_VALUES";
 
-        public static void AddControllersWithBeGeneric<T>(this IServiceCollection services,
+        public static IMvcBuilder AddControllersWithBeGeneric<T>(this IServiceCollection services,
             string connectionString,
             BeConfiguration configuration,
             Action<IAttachedActionService<T>> configureAttachedActionsAction = null,
@@ -102,7 +102,7 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
                 .AddInMemoryCollection(featureConfigutation)
                 .Build();
 
-            services.AddControllers()
+            var result = services.AddControllers()
                 .ConfigureApplicationPartManager(manager =>
                 {
                     manager.FeatureProviders.Clear();
@@ -116,16 +116,18 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
             }
 
             services.AddSingleton<IAttachedActionService<T>>(attachedActionService);
+
+            return result;
         }
 
-        public static void AddControllersWithBeGenericSql<T>(this IServiceCollection services,
+        public static IMvcBuilder AddControllersWithBeGenericSql<T>(this IServiceCollection services,
             string connectionString,
             string configDatabaseConnectionString,
             Action<IAttachedActionService<T>> configureAttachedActionsAction = null,
             string databaseSchema = "dbo",
             string configSchema = "gba")
         {
-            AddControllersWithBeGeneric(services, 
+            return AddControllersWithBeGeneric(services, 
                 connectionString, 
                 new BeConfiguration() {
                     Entities = GetEntityDefinitions(configDatabaseConnectionString, configSchema),
@@ -135,7 +137,7 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
                 databaseSchema);
         }
 
-        public static void AddControllersWithBeGeneric<T>(this IServiceCollection services,
+        public static IMvcBuilder AddControllersWithBeGeneric<T>(this IServiceCollection services,
             string connectionString,
             string configurationPath,
             Action<IAttachedActionService<T>> configureAttachedActionsAction = null,
@@ -147,7 +149,7 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
                 PropertyNameCaseInsensitive = true
             });
 
-            AddControllersWithBeGeneric(services, connectionString, configuration, configureAttachedActionsAction, databaseSchema);
+            return AddControllersWithBeGeneric(services, connectionString, configuration, configureAttachedActionsAction, databaseSchema);
         }
 
         private static List<EntityDefinition> GetEntityDefinitions(string connectionString, string schema)

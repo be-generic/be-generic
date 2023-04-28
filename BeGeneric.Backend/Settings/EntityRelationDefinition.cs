@@ -14,8 +14,8 @@
         public string? ValidToColumnName { get; set; }
         public string? ActiveColumnName { get; set; }
 
-        public bool? ShowInEntity { get; set; }
-        public bool? ShowInRelatedEntity { get; set; }
+        public bool ShowInEntity { get; set; } = false;
+        public bool ShowInRelatedEntity { get; set; } = false;
 
         public string RelatedEntityKey { get; set; }
     }

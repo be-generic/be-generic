@@ -75,8 +75,8 @@ namespace BeGeneric.Helpers
             {
                 EntityId = entityId,
                 PropertyId = Guid.NewGuid(),
-                IsKey = property.IsKey,
-                IsReadOnly = property.IsReadOnly,
+                IsKey = property.IsKey ?? false,
+                IsReadOnly = property.IsReadOnly ?? false,
                 ModelPropertyName = property.ModelPropertyName,
                 PropertyName = property.PropertyName,
                 RelatedModelPropertyName = property.RelatedModelPropertyName,
