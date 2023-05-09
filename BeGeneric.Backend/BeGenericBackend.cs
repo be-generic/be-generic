@@ -2,8 +2,10 @@
 using BeGeneric.Backend.Services.BeGeneric.DatabaseStructure;
 using BeGeneric.Backend.Services.Common;
 using BeGeneric.Backend.Settings;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.FeatureManagement;
 using System.Data;
 using System.Data.SqlClient;
@@ -84,6 +86,7 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
             services.AddSingleton(databaseStructureService);
             services.AddSingleton<IMemoryCacheService, MemoryCacheService>();
             services.AddSingleton(configuration.Entities);
+            services.TryAddEnumerable(ServiceDescriptor.Transient<IApplicationModelProvider, ServiceControllerDynamicRouteProvider>());
 
             services.AddScoped<IDbConnection>((x) =>
             {
@@ -139,7 +142,7 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
 
         public static IMvcBuilder AddControllersWithBeGeneric<T>(this IServiceCollection services,
             string connectionString,
-            string configurationPath,
+            string configurationPath = "./be-generic.config.json",
             Action<IAttachedActionService<T>> configureAttachedActionsAction = null,
             string databaseSchema = "dbo")
         {

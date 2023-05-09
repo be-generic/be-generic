@@ -12,7 +12,6 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddControllersWithBeGeneric<int>(
     builder.Configuration.GetConnectionString("connectionString"),
-    "./be-generic.config.json",
     databaseSchema: "hr"
 );
 

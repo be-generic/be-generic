@@ -17,24 +17,24 @@ namespace BeGeneric.Backend.Controllers
             this.genericService = genericService;
         }
 
-        [HttpGet("{controllerName}/{id}")]
-        public async Task<IActionResult> Get(string controllerName, T id)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> Get(T id)
         {
-            return await GetActionResult(this.genericService.Get(this.User, controllerName, id));
+            return await GetActionResult(this.genericService.Get(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id));
         }
 
-        [HttpGet("{controllerName}")]
-        public async Task<IActionResult> Get(string controllerName, int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC")
+        [HttpGet]
+        public async Task<IActionResult> Get(int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC")
         {
-            return await GetActionResult(this.genericService.Get(this.User, controllerName, page, pageSize, sortProperty, sortOrder));
+            return await GetActionResult(this.genericService.Get(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), page, pageSize, sortProperty, sortOrder));
         }
 
-        [HttpPost("{controllerName}/filter")]
-        public async Task<IActionResult> Get(string controllerName, int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC", DataRequestObject? dataRequestObject = null)
+        [HttpPost("filter")]
+        public async Task<IActionResult> Get(int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC", DataRequestObject? dataRequestObject = null)
         {
             if (!string.IsNullOrEmpty(dataRequestObject?.Property) || !string.IsNullOrEmpty(dataRequestObject?.Conjunction))
             {
-                return await GetActionResult(this.genericService.Get(this.User, controllerName, page, pageSize, sortProperty, sortOrder, dataRequestObject, dataRequestObject?.Summaries));
+                return await GetActionResult(this.genericService.Get(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), page, pageSize, sortProperty, sortOrder, dataRequestObject, dataRequestObject?.Summaries));
             }
             else
             {
@@ -45,29 +45,29 @@ namespace BeGeneric.Backend.Controllers
                     comparer = JsonSerializer.Deserialize<ComparerObject>(dataRequestObject?.Filter.ToString(), new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
                 }
 
-                return await GetActionResult(this.genericService.Get(this.User, controllerName, page, pageSize, sortProperty, sortOrder, comparer, dataRequestObject?.Summaries));
+                return await GetActionResult(this.genericService.Get(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), page, pageSize, sortProperty, sortOrder, comparer, dataRequestObject?.Summaries));
             }
         }
 
-        [HttpPost("{controllerName}")]
-        public async Task<IActionResult> Post(string controllerName, Dictionary<string, JsonNode> fieldValues)
+        [HttpPost]
+        public async Task<IActionResult> Post(Dictionary<string, JsonNode> fieldValues)
         {
-            return await GetActionResult(this.genericService.Post(this.User, controllerName, fieldValues));
+            return await GetActionResult(this.genericService.Post(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), fieldValues));
         }
 
-        [HttpPost("{controllerName}/{id}/{relatedEntityName}")]
-        public async Task<IActionResult> Post(string controllerName, T id, string relatedEntityName, [FromBody] RelatedEntityObject relatedEntity)
+        [HttpPost("{id}/{relatedEntityName}")]
+        public async Task<IActionResult> Post(T id, string relatedEntityName, [FromBody] RelatedEntityObject relatedEntity)
         {
-            return await GetActionResult(this.genericService.PostRelatedEntity(this.User, controllerName, id, relatedEntityName, relatedEntity));
+            return await GetActionResult(this.genericService.PostRelatedEntity(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, relatedEntityName, relatedEntity));
         }
 
-        [HttpPut("{controllerName}/{id?}")]
-        [HttpPatch("{controllerName}/{id?}")]
-        public async Task<IActionResult> Patch(string controllerName, T? id, Dictionary<string, JsonNode> fieldValues)
+        [HttpPut("{id?}")]
+        [HttpPatch("{id?}")]
+        public async Task<IActionResult> Patch(T? id, Dictionary<string, JsonNode> fieldValues)
         {
             try
             {
-                await this.genericService.Patch(this.User, controllerName, id, fieldValues);
+                await this.genericService.Patch(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, fieldValues);
                 return NoContent();
             }
             catch (GenericBackendSecurityException ex)
@@ -80,14 +80,14 @@ namespace BeGeneric.Backend.Controllers
             }
         }
 
-        [HttpPut("{controllerName}/return/{id?}")]
-        [HttpPatch("{controllerName}/return/{id?}")]
-        public async Task<IActionResult> PatchReturn(string controllerName, T? id, Dictionary<string, JsonNode> fieldValues)
+        [HttpPut("return/{id?}")]
+        [HttpPatch("return/{id?}")]
+        public async Task<IActionResult> PatchReturn(T? id, Dictionary<string, JsonNode> fieldValues)
         {
             T id1;
             try
             {
-                id1 = await this.genericService.Patch(this.User, controllerName, id, fieldValues);
+                id1 = await this.genericService.Patch(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, fieldValues);
             }
             catch (GenericBackendSecurityException ex)
             {
@@ -98,19 +98,19 @@ namespace BeGeneric.Backend.Controllers
                 throw new Exception("Unknown error");
             }
 
-            return await GetActionResult(this.genericService.Get(this.User, controllerName, id1));
+            return await GetActionResult(this.genericService.Get(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id1));
         }
 
-        [HttpDelete("{controllerName}/{id}")]
-        public async Task<IActionResult> Delete(string controllerName, T id)
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(T id)
         {
-            return await GetActionResult(this.genericService.Delete(this.User, controllerName, id));
+            return await GetActionResult(this.genericService.Delete(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id));
         }
 
-        [HttpDelete("{controllerName}/{id}/{relatedEntityName}/{relatedEntityId}")]
-        public async Task<IActionResult> DeleteRelatedEntity(string controllerName, T id, string relatedEntityName, T relatedEntityId)
+        [HttpDelete("{id}/{relatedEntityName}/{relatedEntityId}")]
+        public async Task<IActionResult> DeleteRelatedEntity(T id, string relatedEntityName, T relatedEntityId)
         {
-            return await GetActionResult(this.genericService.DeleteRelatedEntity(this.User, controllerName, id, relatedEntityName, relatedEntityId));
+            return await GetActionResult(this.genericService.DeleteRelatedEntity(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, relatedEntityName, relatedEntityId));
         }
     }
 }
