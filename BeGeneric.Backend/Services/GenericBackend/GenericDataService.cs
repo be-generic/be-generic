@@ -544,7 +544,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             }
         }
 
-        public async Task PostRelatedEntity(ClaimsPrincipal user, string controllerName, T id, string relatedEntityName, RelatedEntityObject relatedEntity)
+        public async Task PostRelatedEntity(ClaimsPrincipal user, string controllerName, T id, string relatedEntityName, RelatedEntityObject<T> relatedEntity)
         {
             (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, post: true);
 
@@ -1532,9 +1532,9 @@ namespace BeGeneric.Backend.Services.BeGeneric
         }
     }
 
-    public class RelatedEntityObject
+    public class RelatedEntityObject<T>
     {
-        public Guid Id { get; set; }
+        public T Id { get; set; }
     }
 
     public record SelectPropertyData
