@@ -56,7 +56,7 @@ namespace BeGeneric.Backend.Controllers
         }
 
         [HttpPost("{id}/{relatedEntityName}")]
-        public async Task<IActionResult> Post(T id, string relatedEntityName, [FromBody] RelatedEntityObject relatedEntity)
+        public async Task<IActionResult> Post(T id, string relatedEntityName, [FromBody] RelatedEntityObject<T> relatedEntity)
         {
             return await GetActionResult(this.genericService.PostRelatedEntity(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, relatedEntityName, relatedEntity));
         }
