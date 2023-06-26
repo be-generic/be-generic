@@ -56,8 +56,9 @@ namespace BeGeneric.Backend.Controllers
         }
 
         [HttpPost("{id}/{relatedEntityName}")]
-        public async Task<IActionResult> Post(T id, string relatedEntityName, [FromBody] RelatedEntityObject<T> relatedEntity)
+        public async Task<IActionResult> PostRelatedEntity(T id, [FromBody] RelatedEntityObject<T> relatedEntity)
         {
+            string relatedEntityName = ControllerContext.ActionDescriptor.ActionName.Substring("post-".Length);
             return await GetActionResult(this.genericService.PostRelatedEntity(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, relatedEntityName, relatedEntity));
         }
 
@@ -108,8 +109,9 @@ namespace BeGeneric.Backend.Controllers
         }
 
         [HttpDelete("{id}/{relatedEntityName}/{relatedEntityId}")]
-        public async Task<IActionResult> DeleteRelatedEntity(T id, string relatedEntityName, T relatedEntityId)
+        public async Task<IActionResult> DeleteRelatedEntity(T id, T relatedEntityId)
         {
+            string relatedEntityName = ControllerContext.ActionDescriptor.ActionName.Substring("delete-".Length);
             return await GetActionResult(this.genericService.DeleteRelatedEntity(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, relatedEntityName, relatedEntityId));
         }
     }

@@ -45,6 +45,12 @@ namespace BeGeneric.Helpers
                     property.Entity = entitiesList.First(x => x.EntityId == property.EntityId);
                 }
 
+                foreach (var relation in entitiesList.SelectMany(x => x.EntityRelations1).Where(x => x.Entity2Id == entity.EntityId))
+                {
+                    relation.Entity1 = entitiesList.First(x => x.EntityId == relation.Entity1Id);
+                    relation.Entity2 = entitiesList.First(x => x.EntityId == relation.Entity2Id);
+                }
+
                 entity.ReferencingProperties = entitiesList.SelectMany(x => x.Properties).Where(x => x.ReferencingEntityId == entity.EntityId).ToList();
                 entity.EntityRelations2 = entitiesList.SelectMany(x => x.EntityRelations1).Where(x => x.Entity2Id == entity.EntityId).ToList();
             }

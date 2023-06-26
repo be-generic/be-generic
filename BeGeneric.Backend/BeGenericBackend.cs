@@ -97,9 +97,10 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
 
             services.AddScoped<IGenericDataService<T>, GenericDataService<T>>();
 
-            Dictionary<string, string> featureConfigutation = new();
-
-            featureConfigutation.Add(typeof(T).Name, "true");
+            Dictionary<string, string> featureConfigutation = new()
+            {
+                { typeof(T).Name, "true" }
+            };
 
             var configurationBuild = new ConfigurationBuilder()
                 .AddInMemoryCollection(featureConfigutation)

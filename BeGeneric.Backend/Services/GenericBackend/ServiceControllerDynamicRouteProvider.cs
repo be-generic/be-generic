@@ -46,6 +46,47 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     }
                 });
 
+                var deleteAction = newController.Actions.Where(x => x.ActionName.Contains("DeleteRelatedEntity")).First();
+                var postAction = newController.Actions.Where(x => x.ActionName.Contains("PostRelatedEntity")).First();
+
+                foreach (var crossRelation in this.entities.SelectMany(x => x.EntityRelations).Where(x => entity.EntityRelations.Contains(x) || x.RelatedEntityKey == entity.EntityKey))
+                {
+                    var newDeleteAction = new ActionModel(deleteAction)
+                    {
+                        ActionName = "delete_" + crossRelation.RelatedEntityPropertyName.ToLowerInvariant()
+                    };
+
+                    newDeleteAction.Selectors.Clear();
+                    newDeleteAction.Selectors.Add(new SelectorModel(deleteAction.Selectors[0])
+                    {
+                        AttributeRouteModel = new AttributeRouteModel(deleteAction.Selectors[0].AttributeRouteModel)
+                        {
+                            Template = "{id}/" + crossRelation.RelatedEntityPropertyName.ToLowerInvariant() + "/{relatedEntityId}"
+                        }
+                    });
+
+                    newController.Actions.Add(newDeleteAction);
+
+                    var newPostAction = new ActionModel(postAction)
+                    {
+                        ActionName = "post_" + crossRelation.RelatedEntityPropertyName.ToLowerInvariant()
+                    };
+
+                    newPostAction.Selectors.Clear();
+                    newPostAction.Selectors.Add(new SelectorModel(postAction.Selectors[0])
+                    {
+                        AttributeRouteModel = new AttributeRouteModel(postAction.Selectors[0].AttributeRouteModel)
+                        {
+                            Template = "{id}/" + crossRelation.RelatedEntityPropertyName.ToLowerInvariant()
+                        }
+                    });
+
+                    newController.Actions.Add(newPostAction);
+                }
+
+                newController.Actions.Remove(postAction);
+                newController.Actions.Remove(deleteAction);
+
                 context.Result.Controllers.Add(newController);
             }
 
