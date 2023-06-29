@@ -144,7 +144,9 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
                     if (property == null)
                     {
-                        property = iterationEntity.ReferencingProperties.FirstOrDefault(x => iterationEntity.ReferencingProperties[0].RelatedModelPropertyName.ToLowerInvariant() == prop);
+                        property = iterationEntity.ReferencingProperties.Where(x => string.Equals(x.RelatedModelPropertyName ?? (
+                            x.Entity.CamelCaseName() + "_" + x.CamelCaseName()
+                            ), prop, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                         referencingProperty = property != null;
                     }
 
