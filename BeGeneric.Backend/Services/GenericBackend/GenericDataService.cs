@@ -86,7 +86,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 filterObjectWithPermissions = JsonSerializer.Deserialize<ComparerObject>(permissionsFilter, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
             }
 
-            var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, 0, "tab1", null);
+            var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, sqlParameters.Count, "tab1", null);
 
             if (filters != null)
             {
