@@ -49,7 +49,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 var deleteAction = newController.Actions.Where(x => x.ActionName.Contains("DeleteRelatedEntity")).First();
                 var postAction = newController.Actions.Where(x => x.ActionName.Contains("PostRelatedEntity")).First();
 
-                foreach (var crossRelation in this.entities.SelectMany(x => x.EntityRelations).Where(x => entity.EntityRelations.Contains(x) || x.RelatedEntityKey == entity.EntityKey))
+                foreach (var crossRelation in this.entities.Where(x => x.EntityRelations != null).SelectMany(x => x.EntityRelations).Where(x => entity.EntityRelations.Contains(x) || x.RelatedEntityKey == entity.EntityKey))
                 {
                     var newDeleteAction = new ActionModel(deleteAction)
                     {
