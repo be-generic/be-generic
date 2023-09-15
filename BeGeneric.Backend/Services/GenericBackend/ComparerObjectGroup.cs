@@ -5,8 +5,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
 {
     public class ComparerObjectGroup
     {
-        public string Conjunction { get; set; }
-        public ComparerObject[] Comparisons { get; set; }
+        public string? Conjunction { get; set; }
+        public ComparerObject[]? Comparisons { get; set; }
 
         public virtual Tuple<string, int, List<Tuple<string, object>>> ToSQLQuery(ClaimsPrincipal user, Entity entity, string dbSchema, int counter, string originTableAlias, Dictionary<string, SelectPropertyData> joinData)
         {

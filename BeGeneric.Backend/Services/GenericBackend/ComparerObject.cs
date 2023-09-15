@@ -8,9 +8,9 @@ namespace BeGeneric.Backend.Services.BeGeneric
 {
     public class ComparerObject : ComparerObjectGroup
     {
-        public string Operator { get; set; }
-        public string Property { get; set; }
-        public object Filter { get; set; }
+        public string? Operator { get; set; }
+        public string? Property { get; set; }
+        public object? Filter { get; set; }
 
         public override Tuple<string, int, List<Tuple<string, object>>> ToSQLQuery(string userName, Entity entity, string dbSchema, int counter, string originTableAlias, Dictionary<string, SelectPropertyData> joinData)
         {

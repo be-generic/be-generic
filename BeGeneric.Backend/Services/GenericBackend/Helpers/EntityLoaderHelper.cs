@@ -62,7 +62,7 @@ namespace BeGeneric.Helpers
         {
             Guid id = entityIds[GetEntityDefinitionKey(entity)];
 
-            return new Entity()
+            var ent = new Entity()
             {
                 ControllerName = entity.ControllerName,
                 EntityRelations1 = entity.EntityRelations != null ? entity.EntityRelations.Select(x => x.ToEntityRelation(id)).ToList() : new List<EntityRelation>(),
@@ -73,6 +73,17 @@ namespace BeGeneric.Helpers
                 TableName = entity.TableName,
                 EntityId = id,
             };
+
+            if (ent.EntityRoles != null)
+            {
+                foreach (var er in ent.EntityRoles)
+                {
+                    er.Entity = ent;
+                    er.EntitiesEntityId = id;
+                }
+            }
+
+            return ent;
         }
 
         internal static Property ToProperty(this PropertyDefinition property, Guid entityId)
