@@ -66,7 +66,7 @@ namespace BeGeneric.Helpers
             {
                 ControllerName = entity.ControllerName,
                 EntityRelations1 = entity.EntityRelations != null ? entity.EntityRelations.Select(x => x.ToEntityRelation(id)).ToList() : new List<EntityRelation>(),
-                EntityRoles = entity.EntityRoles.Select(x => x.ToEntityRole(id)).ToList(),
+                EntityRoles = entity.EntityRoles?.Select(x => x.ToEntityRole(id))?.ToList() ?? new List<EntityRole>(),
                 ObjectName = entity.ObjectName,
                 Properties = entity.Properties.Select(x => x.ToProperty(id)).ToList(),
                 SoftDeleteColumn = entity.SoftDeleteColumn,

@@ -200,13 +200,17 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             List<SqlParameter> parameters = new();
 
-            string query = GenerateSelectQuery(entity, ref tabCounter, roleName, userName, parameters);
-            var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, parameters.Count, "tab1", null);
+            string query = "SELECT * FROM (" + GenerateSelectQuery(entity, ref tabCounter, roleName, userName, parameters);
+
+            var joinData = new Dictionary<string, SelectPropertyData>();
+            var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, parameters.Count, "tab1", joinData);
 
             if (filters != null)
             {
                 query += $" AND {filters.Item1}";
             }
+
+            query += ") t1";
 
             query = AddOrderByToQuery(query, entity, sortProperty, sortOrder);
 
@@ -1031,11 +1035,36 @@ namespace BeGeneric.Backend.Services.BeGeneric
         {
             string alteredQuery = query;
             string keyProperty = entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID";
-            string orderByColumn = string.IsNullOrEmpty(sortProperty) ?
-                null :
-                entity.Properties.Where(x => x.CamelCaseName().ToLowerInvariant() == sortProperty.ToLowerInvariant()).Select(x => x.PropertyName).FirstOrDefault();
-            orderByColumn ??= keyProperty;
-            alteredQuery += $" ORDER BY {dbStructure.ColumnDelimiterLeft}{orderByColumn}{dbStructure.ColumnDelimiterRight} {(string.Equals(sortOrder, "ASC", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC")}";
+
+            string[] sortTable = !string.IsNullOrEmpty(sortProperty) ?
+                sortProperty.Split('.') :
+                Array.Empty<string>();
+
+            StringBuilder sortBuilder = new();
+            
+            if (sortTable.Length > 1)
+            {
+                sortBuilder.Append($"JSON_VALUE({dbStructure.ColumnDelimiterLeft}{sortTable[0]}{dbStructure.ColumnDelimiterRight}, '$");
+            }
+            else if (!string.IsNullOrEmpty(sortProperty))
+            {
+                sortBuilder.Append(dbStructure.ColumnDelimiterLeft);
+                sortBuilder.Append(entity.Properties.Where(x => x.CamelCaseName().ToLowerInvariant() == sortProperty.ToLowerInvariant()).Select(x => x.PropertyName).FirstOrDefault());
+                sortBuilder.Append(dbStructure.ColumnDelimiterRight);
+            }
+
+            if (sortTable.Length > 1)
+            {
+                foreach (var tablePart in sortTable[1..])
+                {
+                    sortBuilder.Append($".{tablePart.CamelCaseName()}");
+                }
+
+                sortBuilder.Append("')");
+            }
+
+            string orderByColumn = sortBuilder.Length == 0 ? $"{dbStructure.ColumnDelimiterLeft}{keyProperty}{dbStructure.ColumnDelimiterRight}" : sortBuilder.ToString();
+            alteredQuery += $" ORDER BY {orderByColumn} {(string.Equals(sortOrder, "ASC", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC")}";
             return alteredQuery;
         }
 
