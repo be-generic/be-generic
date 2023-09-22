@@ -200,7 +200,13 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             List<SqlParameter> parameters = new();
 
-            string query = "SELECT * FROM (" + GenerateSelectQuery(entity, ref tabCounter, roleName, userName, parameters);
+            string query = string.Empty;
+            if (!string.IsNullOrEmpty(sortProperty) && sortProperty.Contains('.'))
+            {
+                query = "SELECT * FROM (";
+            }
+
+            query += GenerateSelectQuery(entity, ref tabCounter, roleName, userName, parameters);
 
             var joinData = new Dictionary<string, SelectPropertyData>();
             var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, parameters.Count, "tab1", joinData);
@@ -210,7 +216,10 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 query += $" AND {filters.Item1}";
             }
 
-            query += ") t1";
+            if (!string.IsNullOrEmpty(sortProperty) && sortProperty.Contains('.'))
+            {
+                query += ") t1";
+            }
 
             query = AddOrderByToQuery(query, entity, sortProperty, sortOrder);
 
