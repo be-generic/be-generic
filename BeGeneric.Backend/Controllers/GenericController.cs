@@ -1,6 +1,9 @@
 ﻿using BeGeneric.Backend.Services.BeGeneric;
 using BeGeneric.Backend.Services.BeGeneric.Exceptions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -18,7 +21,7 @@ namespace BeGeneric.Backend.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(T id)
+        public async Task<IActionResult> GetOne(T id)
         {
             return await GetActionResult(this.genericService.Get(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id));
         }
@@ -30,7 +33,7 @@ namespace BeGeneric.Backend.Controllers
         }
 
         [HttpPost("filter")]
-        public async Task<IActionResult> Get(int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC", DataRequestObject? dataRequestObject = null)
+        public async Task<IActionResult> GetWithFilter(int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC", DataRequestObject? dataRequestObject = null)
         {
             if (!string.IsNullOrEmpty(dataRequestObject?.Property) || !string.IsNullOrEmpty(dataRequestObject?.Conjunction))
             {
@@ -50,9 +53,19 @@ namespace BeGeneric.Backend.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post(Dictionary<string, JsonNode> fieldValues)
+        [ReadableBodyStream]
+        public async Task<IActionResult> Post(object fieldValues)
         {
-            return await GetActionResult(this.genericService.Post(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), fieldValues));
+            Dictionary<string, JsonNode> actualFeldValues;
+
+            HttpContext.Request.Body.Seek(0, SeekOrigin.Begin);
+            using (var stream = new StreamReader(this.Request.Body))
+            {
+                var body = await stream.ReadToEndAsync();
+                actualFeldValues = JsonSerializer.Deserialize<Dictionary<string, JsonNode>>(body);
+            }
+
+            return await GetActionResult(this.genericService.Post(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), actualFeldValues));
         }
 
         [HttpPost("{id}/{relatedEntityName}")]
@@ -64,11 +77,21 @@ namespace BeGeneric.Backend.Controllers
 
         [HttpPut("{id?}")]
         [HttpPatch("{id?}")]
-        public async Task<IActionResult> Patch(T? id, Dictionary<string, JsonNode> fieldValues)
+        [ReadableBodyStream]
+        public async Task<IActionResult> Patch(T? id, object fieldValues)
         {
+            Dictionary<string, JsonNode> actualFeldValues;
+
+            HttpContext.Request.Body.Seek(0, SeekOrigin.Begin);
+            using (var stream = new StreamReader(this.Request.Body))
+            {
+                var body = await stream.ReadToEndAsync();
+                actualFeldValues = JsonSerializer.Deserialize<Dictionary<string, JsonNode>>(body);
+            }
+
             try
             {
-                await this.genericService.Patch(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, fieldValues);
+                await this.genericService.Patch(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, actualFeldValues);
                 return NoContent();
             }
             catch (GenericBackendSecurityException ex)
@@ -83,12 +106,22 @@ namespace BeGeneric.Backend.Controllers
 
         [HttpPut("return/{id?}")]
         [HttpPatch("return/{id?}")]
-        public async Task<IActionResult> PatchReturn(T? id, Dictionary<string, JsonNode> fieldValues)
+        [ReadableBodyStream]
+        public async Task<IActionResult> PatchReturn(T? id, object fieldValues)
         {
+            Dictionary<string, JsonNode> actualFeldValues;
+
+            HttpContext.Request.Body.Seek(0, SeekOrigin.Begin);
+            using (var stream = new StreamReader(this.Request.Body))
+            {
+                var body = await stream.ReadToEndAsync();
+                actualFeldValues = JsonSerializer.Deserialize<Dictionary<string, JsonNode>>(body);
+            }
+
             T id1;
             try
             {
-                id1 = await this.genericService.Patch(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, fieldValues);
+                id1 = await this.genericService.Patch(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, actualFeldValues);
             }
             catch (GenericBackendSecurityException ex)
             {
@@ -113,6 +146,14 @@ namespace BeGeneric.Backend.Controllers
         {
             string relatedEntityName = ControllerContext.ActionDescriptor.ActionName.Substring("delete-".Length);
             return await GetActionResult(this.genericService.DeleteRelatedEntity(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, relatedEntityName, relatedEntityId));
+        }
+    }
+
+    public class ReadableBodyStreamAttribute : Attribute, IAuthorizationFilter
+    {
+        public void OnAuthorization(AuthorizationFilterContext context)
+        {
+            context.HttpContext.Request.EnableBuffering();
         }
     }
 }
