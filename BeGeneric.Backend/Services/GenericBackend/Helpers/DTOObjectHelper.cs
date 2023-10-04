@@ -69,7 +69,6 @@ namespace BeGeneric.Backend.Services.GenericBackend.Helpers
         {
             string propertyName = string.IsNullOrEmpty(property.ModelPropertyName) ? property.PropertyName.TitleCaseOriginalName() : property.ModelPropertyName.TitleCaseOriginalName();
 
-
             PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(propertyName, PropertyAttributes.HasDefault, dataType, null);
             MethodBuilder getPropMthdBldr = typeBuilder.DefineMethod("get_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, dataType, Type.EmptyTypes);
             ILGenerator getIl = getPropMthdBldr.GetILGenerator();

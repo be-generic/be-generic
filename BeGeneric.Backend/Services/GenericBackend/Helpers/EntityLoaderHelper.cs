@@ -93,6 +93,7 @@ namespace BeGeneric.Helpers
                 EntityId = entityId,
                 PropertyId = Guid.NewGuid(),
                 IsKey = property.IsKey ?? false,
+                IsHidden = property.IsHidden ?? false,
                 IsReadOnly = property.IsReadOnly ?? false,
                 ModelPropertyName = property.ModelPropertyName,
                 PropertyName = property.PropertyName,

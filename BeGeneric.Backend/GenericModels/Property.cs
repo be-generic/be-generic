@@ -14,6 +14,7 @@ namespace BeGeneric.Backend.Models
         public Guid? ReferencingEntityId { get; set; }
         public bool IsKey { get; set; }
         public bool IsReadOnly { get; set; }
+        public bool IsHidden { get; set; }
         public string RelatedModelPropertyName { get; set; }
 
 

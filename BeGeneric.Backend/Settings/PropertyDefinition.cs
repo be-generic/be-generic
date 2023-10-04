@@ -7,7 +7,8 @@
 
         public bool? IsKey { get; set; } = false;
         public bool? IsReadOnly { get; set; } = false;
-        
+        public bool? IsHidden { get; set; } = false;
+
         public string? RelatedModelPropertyName { get; set; }
 
         public string? ReferencingEntityKey { get; set; }

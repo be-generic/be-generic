@@ -415,7 +415,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 });
             }
 
-            List<Property> properties = entity.Properties.Where(x => !x.IsKey && !x.IsReadOnly).OrderBy(x => x.PropertyName).ToList();
+            List<Property> properties = entity.Properties.Where(x => !x.IsKey && !x.IsReadOnly && !x.IsHidden).OrderBy(x => x.PropertyName).ToList();
 
             var usedProperties = properties
                 .Where(prop => values.ContainsKey((prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant())
@@ -645,7 +645,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 });
             }
 
-            List<Property> properties = entity.Properties.Where(x => !x.IsKey && !x.IsReadOnly).OrderBy(x => x.PropertyName).ToList();
+            List<Property> properties = entity.Properties.Where(x => !x.IsKey && !x.IsReadOnly && !x.IsHidden).OrderBy(x => x.PropertyName).ToList();
 
             int i = 0;
 
@@ -1305,7 +1305,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             queryBuilder.AppendLine($"SELECT tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} AS {dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.CamelCaseName() ?? "id"}{dbStructure.ColumnDelimiterRight} ");
 
-            foreach (Property property in entity.Properties.Where(x => !x.IsKey))
+            foreach (Property property in entity.Properties.Where(x => !x.IsKey && !x.IsHidden))
             {
                 if (property.ReferencingEntityId == null)
                 {
@@ -1317,7 +1317,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 }
             }
 
-            foreach (Property property in entity.ReferencingProperties.Where(x => !string.IsNullOrEmpty(x.RelatedModelPropertyName)))
+            foreach (Property property in entity.ReferencingProperties.Where(x => !string.IsNullOrEmpty(x.RelatedModelPropertyName) && !x.IsHidden))
             {
                 queryBuilder.Append($", ({GenerateSelectQuery(property.Entity, ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} FOR JSON AUTO, INCLUDE_NULL_VALUES) AS {dbStructure.ColumnDelimiterLeft}{property.RelatedModelPropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
             }
