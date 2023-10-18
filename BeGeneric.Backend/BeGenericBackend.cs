@@ -111,6 +111,10 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
                 {
                     manager.FeatureProviders.Clear();
                     manager.FeatureProviders.Add(new GenericControllerFeatureProvider(configurationBuild));
+                })
+                .ConfigureApiBehaviorOptions(options =>
+                {
+                    options.SuppressMapClientErrors = true;
                 });
 
             AttachedActionService<T> attachedActionService = new();

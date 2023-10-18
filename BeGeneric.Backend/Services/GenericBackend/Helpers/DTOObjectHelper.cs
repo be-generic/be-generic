@@ -21,7 +21,7 @@ namespace BeGeneric.Backend.Services.GenericBackend.Helpers
 
             typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
             
-            foreach (var property in entity.Properties.Where(x => !(x.IsKey ?? false) || !isPost))
+            foreach (var property in entity.Properties.Where(x => (!(x.IsKey ?? false) || !isPost) && !(x.IsHidden ?? false)))
             {
                 if (string.IsNullOrEmpty(property.ReferencingEntityKey))
                 {

@@ -10,6 +10,7 @@ namespace BeGeneric.GenericModels
         public int RecordsFiltered { get; set; }
         public int Page { get; set; }
         public int PageSize { get; set; }
+        public Dictionary<string, object> Aggregation { get; set; }
         public List<T> Data { get; set; }
     }
 

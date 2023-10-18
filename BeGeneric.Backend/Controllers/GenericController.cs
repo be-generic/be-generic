@@ -27,7 +27,7 @@ namespace BeGeneric.Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get(int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC")
+        public async Task<IActionResult> GetAll(int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC")
         {
             return await GetActionResult(this.genericService.Get(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), page, pageSize, sortProperty, sortOrder));
         }

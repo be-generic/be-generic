@@ -2,7 +2,11 @@
 using BeGeneric.Backend.Services.BeGeneric.DatabaseStructure;
 using BeGeneric.Backend.Services.GenericBackend.Helpers;
 using BeGeneric.Backend.Settings;
+using BeGeneric.GenericModels;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
+using System;
 using System.Reflection;
 
 namespace BeGeneric.Backend.Services.BeGeneric
@@ -41,6 +45,15 @@ namespace BeGeneric.Backend.Services.BeGeneric
             {
                 Type dtoType = DTOObjectHelper.BuildDTOObject(this.entities, entity, structureService, generatedTypes);
                 Type postDtoType = DTOObjectHelper.BuildDTOObject(this.entities, entity, structureService, generatedTypes, true);
+
+                if (!generatedTypes.ContainsKey("Search" + (string.IsNullOrEmpty(entity.TableName) ? entity.ObjectName : entity.TableName)))
+                {
+                    Type pageResultType = typeof(PagedResult<>);
+                    Type getType = pageResultType.MakeGenericType(dtoType);
+                    generatedTypes.Add("Search" + (string.IsNullOrEmpty(entity.TableName) ? entity.ObjectName : entity.TableName), getType);
+                }
+
+                Type getReturnType = generatedTypes["Search" + (string.IsNullOrEmpty(entity.TableName) ? entity.ObjectName : entity.TableName)];
 
                 var newController = new ControllerModel(genericController)
                 {
@@ -140,19 +153,41 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     });
                 }
 
+                var actualGetAction = newController.Actions.Where(x => x.ActionName.Contains("GetAll")).First();
+                var actualGetFilterAction = newController.Actions.Where(x => x.ActionName.Contains("GetWithFilter")).First();
                 if (entity.EntityRoles != null && entity.EntityRoles.Count > 0 && !entity.EntityRoles.Any(x => x.GetAll))
                 {
-                    var actualGetAction = newController.Actions.Where(x => x.ActionName.EndsWith("Get")).First();
                     newController.Actions.Remove(actualGetAction);
+                    newController.Actions.Remove(actualGetFilterAction);
+                }
+                else
+                {
+                    actualGetAction.Filters.Add(new ProducesResponseTypeAttribute(getReturnType, StatusCodes.Status200OK));
+                    actualGetAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status400BadRequest));
+                    actualGetAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status401Unauthorized));
+                    actualGetAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status403Forbidden));
+                    actualGetAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status500InternalServerError));
 
-                    actualGetAction = newController.Actions.Where(x => x.ActionName.EndsWith("GetWithFilter")).First();
-                    newController.Actions.Remove(actualGetAction);
+                    actualGetFilterAction.Filters.Add(new ProducesResponseTypeAttribute(getReturnType, StatusCodes.Status200OK));
+                    actualGetFilterAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status400BadRequest));
+                    actualGetFilterAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status401Unauthorized));
+                    actualGetFilterAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status403Forbidden));
+                    actualGetFilterAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status500InternalServerError));
                 }
 
+                var actualGetOneAction = newController.Actions.Where(x => x.ActionName.Contains("GetOne")).First();
                 if (entity.EntityRoles != null && entity.EntityRoles.Count > 0 && !entity.EntityRoles.Any(x => x.GetOne))
                 {
-                    var actualGetAction = newController.Actions.Where(x => x.ActionName.EndsWith("GetOne")).First();
-                    newController.Actions.Remove(actualGetAction);
+                    newController.Actions.Remove(actualGetOneAction);
+                }
+                else
+                {
+                    actualGetOneAction.Filters.Add(new ProducesResponseTypeAttribute(dtoType, StatusCodes.Status200OK));
+                    actualGetOneAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status400BadRequest));
+                    actualGetOneAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status401Unauthorized));
+                    actualGetOneAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status403Forbidden));
+                    actualGetOneAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status404NotFound));
+                    actualGetOneAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status500InternalServerError));
                 }
 
                 newController.Actions.Remove(postAction);
