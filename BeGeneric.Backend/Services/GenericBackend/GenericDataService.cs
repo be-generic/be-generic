@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -74,8 +75,9 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             int tabCounter = 0;
             List<SqlParameter> sqlParameters = new();
+            List<Guid> entityIds = new();
 
-            string query = GenerateSelectQuery(entity, ref tabCounter, roleName, userName, sqlParameters, null, id);
+            string query = GenerateSelectQuery(entity, entityIds, ref tabCounter, roleName, userName, sqlParameters, null, id);
 
             List<Tuple<string, object>> permissionsFilterParams = new();
 
@@ -206,7 +208,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 query = "SELECT * FROM (";
             }
 
-            query += GenerateSelectQuery(entity, ref tabCounter, roleName, userName, parameters);
+            List<Guid> entityIds = new();
+            query += GenerateSelectQuery(entity, entityIds, ref tabCounter, roleName, userName, parameters);
 
             var joinData = new Dictionary<string, SelectPropertyData>();
             var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, parameters.Count, "tab1", joinData);
@@ -1297,7 +1300,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             return queryBuilder.ToString();
         }
 
-        private string GenerateSelectQuery(Entity entity, ref int counter, string roleName, string userName, List<SqlParameter> parameters, string filterProperty = null, object filterValue = null)
+        private string GenerateSelectQuery(Entity entity, IEnumerable<Guid> entities, ref int counter, string roleName, string userName, List<SqlParameter> parameters, string filterProperty = null, object filterValue = null)
         {
             string filter = AuthorizeSubentity(roleName, userName, entity);
             StringBuilder queryBuilder = new();
@@ -1313,18 +1316,29 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 }
                 else if (string.IsNullOrEmpty(property.RelatedModelPropertyName))
                 {
-                    queryBuilder.Append($", (JSON_QUERY(({GenerateSelectQuery(property.ReferencingEntity, ref counter, roleName, userName, parameters, $"tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight}")}))) AS {dbStructure.ColumnDelimiterLeft}{property.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
+                    if (!entities.Contains(property.ReferencingEntityId.Value))
+                    {
+                        queryBuilder.Append($", (JSON_QUERY(({GenerateSelectQuery(property.ReferencingEntity, entities.Union(new Guid[] { property.ReferencingEntityId.Value }), ref counter, roleName, userName, parameters, $"tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight}")}))) AS {dbStructure.ColumnDelimiterLeft}{property.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
+                    }
                 }
             }
 
             foreach (Property property in entity.ReferencingProperties.Where(x => !string.IsNullOrEmpty(x.RelatedModelPropertyName) && !x.IsHidden))
             {
-                queryBuilder.Append($", ({GenerateSelectQuery(property.Entity, ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} FOR JSON AUTO, INCLUDE_NULL_VALUES) AS {dbStructure.ColumnDelimiterLeft}{property.RelatedModelPropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
+                if (!entities.Contains(property.EntityId))
+                {
+                    queryBuilder.Append($", ({GenerateSelectQuery(property.Entity, entities.Union(new Guid[] { property.EntityId }), ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} FOR JSON AUTO, INCLUDE_NULL_VALUES) AS {dbStructure.ColumnDelimiterLeft}{property.RelatedModelPropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
+                }
             }
 
             foreach (EntityRelation relation in entity.EntityRelations1)
             {
                 if (!relation.ShowInEntity1)
+                {
+                    continue;
+                }
+
+                if (entities.Contains(relation.Entity2Id))
                 {
                     continue;
                 }
@@ -1345,7 +1359,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     whereQueryAddition += $@" AND ({dbStructure.ColumnDelimiterLeft}{relation.ValidToColumnName}{dbStructure.ColumnDelimiterRight} IS NULL OR {dbStructure.ColumnDelimiterLeft}{relation.ValidToColumnName}{dbStructure.ColumnDelimiterRight} >= GETDATE()) ";
                 }
 
-                queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity2, ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{relation.Entity2.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} IN (SELECT {dbStructure.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} FROM " +
+                queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity2, entities.Union(new Guid[] { relation.Entity2Id }), ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{relation.Entity2.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} IN (SELECT {dbStructure.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} FROM " +
                     $"{dbSchema}.{dbStructure.ColumnDelimiterLeft}{relation.CrossTableName}{dbStructure.ColumnDelimiterRight} WHERE {dbStructure.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} {whereQueryAddition}) " +
                     $"FOR JSON AUTO, INCLUDE_NULL_VALUES) AS {dbStructure.ColumnDelimiterLeft}{relation.Entity1PropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
             }
@@ -1362,6 +1376,11 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     continue;
                 }
 
+                if (entities.Contains(relation.Entity1Id))
+                {
+                    continue;
+                }
+
                 string whereQueryAddition = "";
                 if (!string.IsNullOrEmpty(relation.ActiveColumnName))
                 {
@@ -1378,7 +1397,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     whereQueryAddition += $@" AND ({dbStructure.ColumnDelimiterLeft}{relation.ValidToColumnName}{dbStructure.ColumnDelimiterRight} IS NULL OR {dbStructure.ColumnDelimiterLeft}{relation.ValidToColumnName}{dbStructure.ColumnDelimiterRight} >= GETDATE()) ";
                 }
 
-                queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity1, ref counter, roleName, userName, parameters)} AND " +
+                queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity1, entities.Union(new Guid[] { relation.Entity1Id }), ref counter, roleName, userName, parameters)} AND " +
                     $"{dbStructure.ColumnDelimiterLeft}{relation.Entity1.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} IN " +
                     $"(SELECT {dbStructure.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{relation.CrossTableName}{dbStructure.ColumnDelimiterRight} " +
                     $"WHERE {dbStructure.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} {whereQueryAddition}) FOR JSON AUTO, INCLUDE_NULL_VALUES) " +
