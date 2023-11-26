@@ -23,6 +23,11 @@ namespace BeGeneric.Backend.Services.GenericBackend.Helpers
             
             foreach (var property in entity.Properties.Where(x => (!(x.IsKey ?? false) || !isPost) && !(x.IsHidden ?? false)))
             {
+                if (!string.IsNullOrEmpty(property.DefaultValue) && isPost)
+                {
+                    continue;
+                }
+
                 if (string.IsNullOrEmpty(property.ReferencingEntityKey))
                 {
                     var dataType = structureService.GetFieldType(property.PropertyName, entity.TableName);

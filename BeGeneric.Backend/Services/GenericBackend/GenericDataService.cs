@@ -57,7 +57,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
         public async Task<string> Get(ClaimsPrincipal user, string controllerName, T id)
         {
-            (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, getOne: true);
+            (Entity entity, string permissionsFilter, string _) = await Authorize(user, controllerName, getOne: true);
 
             string userName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null;
             string roleName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null;
@@ -149,7 +149,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
         public async Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC", ComparerObject? filterObject = null, SummaryRequestObject[] summaries = null)
         {
-            (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, getAll: true);
+            (Entity entity, string permissionsFilter, string _) = await Authorize(user, controllerName, getAll: true);
 
             string? userName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null;
             string? roleName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null;
@@ -294,7 +294,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
         public async Task<string> Get(ClaimsPrincipal user, Endpoint endpoint, int? page = null, int pageSize = 10, string sortProperty = null, string sortOrder = "ASC", ComparerObject filterObject = null)
         {
-            (Entity entity, string permissionsFilter) = await Authorize(user, endpoint.StartingEntity.ControllerName, getAll: true);
+            (Entity entity, string permissionsFilter, string _) = await Authorize(user, endpoint.StartingEntity.ControllerName, getAll: true);
 
             var action = this.attachedActionService.GetAttachedAction(endpoint.EndpointPath, ActionType.GetAll, ActionOrderType.Before);
             if (action != null)
@@ -405,7 +405,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
         {
             Dictionary<string, JsonNode> values = new(fieldValues.Select(x => new KeyValuePair<string, JsonNode>(x.Key.ToLowerInvariant(), x.Value)));
 
-            (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, post: true);
+            (Entity entity, string permissionsFilter, string userId) = await Authorize(user, controllerName, post: true);
 
             var action = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Post, ActionOrderType.Before);
             if (action != null)
@@ -419,6 +419,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
             }
 
             List<Property> properties = entity.Properties.Where(x => !x.IsKey && !x.IsReadOnly && !x.IsHidden).OrderBy(x => x.PropertyName).ToList();
+
+            properties = properties.Union(entity.Properties.Where(x => !string.IsNullOrEmpty(x.DefaultValue))).ToList();
 
             var usedProperties = properties
                 .Where(prop => values.ContainsKey((prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant())
@@ -443,43 +445,59 @@ namespace BeGeneric.Backend.Services.BeGeneric
             foreach (Property prop in properties.ToArray())
             {
                 object actualValue = DBNull.Value;
-                if (values.ContainsKey((prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant()))
-                {
-                    JsonNode value = values[(prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant()];
-                    if (prop.ReferencingEntity != null)
-                    {
-                        if (value == null)
-                        {
-                            actualValue = DBNull.Value;
-                        }
-                        else if (value is JsonValue value1)
-                        {
-                            actualValue = (object)value1.ToString() ?? DBNull.Value;
-                        }
-                        else if (value is JsonObject obj)
-                        {
-                            var tmp = prop.ReferencingEntity.Properties.FirstOrDefault(x => x.IsKey);
-                            string idName = (tmp?.ModelPropertyName ?? tmp?.PropertyName).CamelCaseName() ?? "id";
-                            actualValue = obj[idName];
 
-                            if (actualValue is JsonValue actualValueJson)
-                            {
-                                actualValue = actualValueJson.ToString();
-                            }
-                            else if (actualValue == null)
+                if (string.IsNullOrEmpty(prop.DefaultValue))
+                {
+                    if (values.ContainsKey((prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant()))
+                    {
+                        JsonNode value = values[(prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant()];
+                        if (prop.ReferencingEntity != null)
+                        {
+                            if (value == null)
                             {
                                 actualValue = DBNull.Value;
                             }
+                            else if (value is JsonValue value1)
+                            {
+                                actualValue = (object)value1.ToString() ?? DBNull.Value;
+                            }
+                            else if (value is JsonObject obj)
+                            {
+                                var tmp = prop.ReferencingEntity.Properties.FirstOrDefault(x => x.IsKey);
+                                string idName = (tmp?.ModelPropertyName ?? tmp?.PropertyName).CamelCaseName() ?? "id";
+                                actualValue = obj[idName];
+
+                                if (actualValue is JsonValue actualValueJson)
+                                {
+                                    actualValue = actualValueJson.ToString();
+                                }
+                                else if (actualValue == null)
+                                {
+                                    actualValue = DBNull.Value;
+                                }
+                            }
                         }
+                        else if (value is JsonValue value1)
+                        {
+                            actualValue = value1.ToString();
+                        }
+
+                        command.Parameters.Add(new SqlParameter("PropertyValue" + i.ToString(), actualValue ?? DBNull.Value));
+
+                        i++;
                     }
-                    else if (value is JsonValue value1)
+                }
+                else
+                {
+                    if (string.Equals(prop.DefaultValue, "$user", StringComparison.OrdinalIgnoreCase))
                     {
-                        actualValue = value1.ToString();
+                        command.Parameters.Add(new SqlParameter("PropertyValue" + i.ToString(), string.IsNullOrEmpty(userId) ? DBNull.Value : userId));
+                        i++;
                     }
-
-                    command.Parameters.Add(new SqlParameter("PropertyValue" + i.ToString(), actualValue ?? DBNull.Value));
-
-                    i++;
+                    else
+                    {
+                        throw new GenericBackendSecurityException(SecurityStatus.BadRequest, new { Error = "Default value not recognised", Property = prop.TitleCaseName() });
+                    }
                 }
 
                 string error = ValidatePropertyValue(prop, actualValue);
@@ -562,7 +580,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
         public async Task PostRelatedEntity(ClaimsPrincipal user, string controllerName, T id, string relatedEntityName, RelatedEntityObject<T> relatedEntity)
         {
-            (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, post: true);
+            (Entity entity, string permissionsFilter, string _) = await Authorize(user, controllerName, post: true);
 
             EntityRelation crossEntity = entity.EntityRelations1.FirstOrDefault(x => string.Equals(x.Entity1PropertyName, relatedEntityName, StringComparison.OrdinalIgnoreCase));
             Entity entity1 = crossEntity?.Entity2;
@@ -634,7 +652,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
         {
             Dictionary<string, JsonNode> values = new(fieldValues.Select(x => new KeyValuePair<string, JsonNode>(x.Key.ToLowerInvariant(), x.Value)));
 
-            (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, put: true);
+            (Entity entity, string permissionsFilter, string _) = await Authorize(user, controllerName, put: true);
 
             var action = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Patch, ActionOrderType.Before);
             if (action != null)
@@ -839,7 +857,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
         public async Task Delete(ClaimsPrincipal user, string controllerName, T id)
         {
-            (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, delete: true);
+            (Entity entity, string permissionsFilter, string _) = await Authorize(user, controllerName, delete: true);
 
             var action = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Delete, ActionOrderType.Before);
             if (action != null)
@@ -899,7 +917,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
         public async Task DeleteRelatedEntity(ClaimsPrincipal user, string controllerName, T id, string relatedEntityName, T relatedEntityId)
         {
-            (Entity entity, string permissionsFilter) = await Authorize(user, controllerName, delete: true);
+            (Entity entity, string permissionsFilter, string _) = await Authorize(user, controllerName, delete: true);
 
             EntityRelation crossEntity = entity.EntityRelations1.FirstOrDefault(x => string.Equals(x.Entity1PropertyName, relatedEntityName, StringComparison.OrdinalIgnoreCase));
             Entity entity1 = crossEntity?.Entity2;
@@ -1487,7 +1505,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             return null;
         }
 
-        private async Task<Tuple<Entity, string>> Authorize(
+        private async Task<Tuple<Entity, string, string?>> Authorize(
             ClaimsPrincipal user,
             string controllerName,
             bool getOne = false,
@@ -1548,7 +1566,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 permissionsFilter = permissionsFilter.Replace("$role", roleName.Replace("\"", "\\\""));
             }
 
-            return new Tuple<Entity, string>(entity, permissionsFilter);
+            return new Tuple<Entity, string, string?>(entity, permissionsFilter, userId);
         }
 
         private string AuthorizeSubentity(string roleName, string userId, Entity entity)
