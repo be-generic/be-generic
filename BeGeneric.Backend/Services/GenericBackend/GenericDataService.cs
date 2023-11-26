@@ -90,7 +90,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, sqlParameters.Count, "tab1", null);
 
-            if (filters != null)
+            if (filters != null && filters.Item1 != null && filters.Item1.Replace("(", "").Replace(")", "").Length > 0)
             {
                 query += $" AND {filters.Item1}";
             }
@@ -214,7 +214,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             var joinData = new Dictionary<string, SelectPropertyData>();
             var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, parameters.Count, "tab1", joinData);
 
-            if (filters != null)
+            if (filters != null && filters.Item1 != null && filters.Item1.Replace("(", "").Replace(")", "").Length > 0)
             {
                 query += $" AND {filters.Item1}";
             }
@@ -1157,7 +1157,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, 0, "tab1", null);
 
-            if (filters != null)
+            if (filters != null && filters.Item1 != null && filters.Item1.Replace("(", "").Replace(")", "").Length > 0)
             {
                 countQuery += countWhereActivated ? " AND (" : " WHERE (";
                 countQuery += filters.Item1;
