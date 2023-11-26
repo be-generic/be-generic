@@ -423,8 +423,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
             properties = properties.Union(entity.Properties.Where(x => !string.IsNullOrEmpty(x.DefaultValue))).ToList();
 
             var usedProperties = properties
-                .Where(prop => values.ContainsKey((prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant())
-                    && (prop.ReferencingEntityId != null ||
+                .Where(prop => (values.ContainsKey((prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant()) || !string.IsNullOrEmpty(prop.DefaultValue))
+                    && (!string.IsNullOrEmpty(prop.DefaultValue) || prop.ReferencingEntityId != null ||
                         (values[(prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant()] as JsonValue) != null));
 
             StringBuilder queryBuilder = new();
