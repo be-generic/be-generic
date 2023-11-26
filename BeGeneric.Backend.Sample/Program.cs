@@ -10,9 +10,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
-builder.Services.AddControllersWithBeGeneric<Guid>(
+builder.Services.AddControllersWithBeGeneric<int>(
     builder.Configuration.GetConnectionString("connectionString"),
-    databaseSchema: "project_62"
+    databaseSchema: "hr"
 );
 
 var app = builder.Build();

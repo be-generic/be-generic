@@ -1,228 +1,341 @@
 {
   "metadata": [
     {
-      "TableName": "UnknownTable2",
-      "ColumnName": "Name",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "nvarchar (2000)"
+      "tableName": "Departments",
+      "columnName": "DepartmentID",
+      "allowedValues": null,
+      "regex": null
     },
     {
-      "TableName": "UnknownTable2",
-      "ColumnName": "Id",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "uniqueidentifier"
+      "tableName": "Departments",
+      "columnName": "DepartmentName",
+      "allowedValues": "IT,Marketing,HR,Management",
+      "regex": null
     },
     {
-      "TableName": "UnknownTable",
-      "ColumnName": "New Property",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "nvarchar (2000)"
+      "tableName": "Departments",
+      "columnName": "ManagerID",
+      "allowedValues": null,
+      "regex": null
     },
     {
-      "TableName": "UnknownTable",
-      "ColumnName": "New Property (1)",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "nvarchar (2000)"
+      "tableName": "EmployeeJobTitles",
+      "columnName": "EmployeeID",
+      "allowedValues": null,
+      "regex": null
     },
     {
-      "TableName": "UnknownTable",
-      "ColumnName": "New Property (2)",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "nvarchar (2000)"
+      "tableName": "EmployeeJobTitles",
+      "columnName": "EmployeeJobTitleID",
+      "allowedValues": null,
+      "regex": null
     },
     {
-      "TableName": "UnknownTable",
-      "ColumnName": "File Property",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "nvarchar (4000)"
+      "tableName": "EmployeeJobTitles",
+      "columnName": "EndDate",
+      "allowedValues": null,
+      "regex": null
     },
     {
-      "TableName": "UnknownTable",
-      "ColumnName": "Id",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "uniqueidentifier"
+      "tableName": "EmployeeJobTitles",
+      "columnName": "JobTitleID",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "EmployeeJobTitles",
+      "columnName": "StartDate",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "Employees",
+      "columnName": "DepartmentID",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "Employees",
+      "columnName": "Email",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "Employees",
+      "columnName": "EmployeeID",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "Employees",
+      "columnName": "FirstName",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "Employees",
+      "columnName": "HireDate",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "Employees",
+      "columnName": "LastName",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "Employees",
+      "columnName": "Phone",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "Employees",
+      "columnName": "Salary",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "EmployeeSkills",
+      "columnName": "EmployeeID",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "EmployeeSkills",
+      "columnName": "EmployeeSkillID",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "EmployeeSkills",
+      "columnName": "SkillID",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "EmployeeSkills",
+      "columnName": "SkillLevel",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "JobTitles",
+      "columnName": "JobDescription",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "JobTitles",
+      "columnName": "JobTitleID",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "JobTitles",
+      "columnName": "JobTitleName",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "PerformanceReviews",
+      "columnName": "EmployeeID",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "PerformanceReviews",
+      "columnName": "PerformanceReviewID",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "PerformanceReviews",
+      "columnName": "ReviewDate",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "PerformanceReviews",
+      "columnName": "ReviewerID",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "PerformanceReviews",
+      "columnName": "ReviewText",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "Roles",
+      "columnName": "Id",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "Roles",
+      "columnName": "RoleDescription",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "Roles",
+      "columnName": "RoleName",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "SalaryHistories",
+      "columnName": "EffectiveDate",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "SalaryHistories",
+      "columnName": "EmployeeID",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "SalaryHistories",
+      "columnName": "NewSalary",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "SalaryHistories",
+      "columnName": "OldSalary",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "SalaryHistories",
+      "columnName": "SalaryHistoryID",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "Skills",
+      "columnName": "SkillID",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "Skills",
+      "columnName": "SkillName",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "TimeOffRequests",
+      "columnName": "EmployeeID",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "TimeOffRequests",
+      "columnName": "EndTime",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "TimeOffRequests",
+      "columnName": "Reason",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "TimeOffRequests",
+      "columnName": "StartTime",
+      "allowedValues": null,
+      "regex": null
+    },
+    {
+      "tableName": "TimeOffRequests",
+      "columnName": "TimeOffRequestID",
+      "allowedValues": null,
+      "regex": null
     }
   ],
   "entities": [
     {
-      "entityKey": "72c5ee51-71c6-5d4a-2a90-e741dfd2c8f8",
-      "tableName": "UnknownTable2",
+      "entityKey": "e878bd66-a6e5-9685-9d96-370092e01332",
+      "tableName": "Departments",
       "objectName": null,
-      "controllerName": "test1",
+      "controllerName": "department",
       "softDeleteColumn": null,
       "properties": [
         {
-          "propertyId": "47c00acf-bde9-1991-5868-91514d772885",
-          "propertyName": "Name",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
+          "propertyName": "DepartmentID",
+          "isKey": true
         },
         {
-          "propertyId": "00000000-0000-0000-0000-000000000000",
-          "propertyName": "Id",
-          "modelPropertyName": null,
-          "isKey": true,
-          "isReadOnly": true,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
+          "propertyName": "DepartmentName"
+        },
+        {
+          "propertyName": "ManagerID",
+          "modelPropertyName": "Manager",
+          "referencingEntityKey": "1d9db267-885c-21b1-de47-215068455951"
         }
       ],
-      "entityRoles": [],
-      "entityRelations": []
+      "entityRoles": []
     },
     {
-      "entityKey": "51062ec4-8837-0a4a-0167-8e6239566015",
-      "tableName": "UnknownTable",
+      "entityKey": "4a4477c1-3717-f989-3bb7-1899ba59b3ae",
+      "tableName": "Employees",
       "objectName": null,
-      "controllerName": "unknown",
+      "controllerName": "employee",
       "softDeleteColumn": null,
       "properties": [
         {
-          "propertyId": "e312d347-3a62-c2e1-0377-825cd5880763",
-          "propertyName": "New Property",
-          "modelPropertyName": null,
-          "isKey": false,
-          "defaultValue": "$user",
-          "isReadOnly": false,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
+          "propertyName": "EmployeeID",
+          "isKey": true
         },
         {
-          "propertyId": "8ea55046-d4d0-cf06-6732-3fb2c1ea83a3",
-          "propertyName": "New Property (1)",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
+          "propertyName": "FirstName"
         },
         {
-          "propertyId": "d6bb40de-d28f-16e4-c245-a5906ef4fe45",
-          "propertyName": "New Property (2)",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
+          "propertyName": "HireDate"
         },
         {
-          "propertyId": "d13a26cc-b9e5-14d6-9566-0ea28cf64e31",
-          "propertyName": "File Property",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
+          "propertyName": "LastName"
         },
         {
-          "propertyId": "00000000-0000-0000-0000-000000000000",
-          "propertyName": "Id",
-          "modelPropertyName": null,
-          "isKey": true,
-          "isReadOnly": true,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
+          "propertyName": "Phone"
+        },
+        {
+          "propertyName": "Salary"
+        },
+        {
+          "propertyName": "DepartmentID",
+          "modelPropertyName": "Department",
+          "referencingEntityKey": "e878bd66-a6e5-9685-9d96-370092e01332"
         }
       ],
-      "entityRoles": [],
-      "entityRelations": [
-        {
-          "crossTableName": "CROSS_UnknownTable2_NewProperty",
-          "entityReferencingColumnName": "Entity2Id",
-          "entityPropertyName": "NewProperty",
-          "relatedEntityReferencingColumnName": "Entity1Id",
-          "relatedEntityPropertyName": "NewProperty",
-          "validFromColumnName": null,
-          "validToColumnName": null,
-          "activeColumnName": null,
-          "showInEntity": false,
-          "showInRelatedEntity": true,
-          "relatedEntityKey": "72c5ee51-71c6-5d4a-2a90-e741dfd2c8f8"
-        }
-      ]
+      "entityRoles": []
     },
     {
-      "entityKey": "D388B2CD-DED7-45D8-9423-F4416811B14B",
-      "tableName": "_BeGen_Role",
-      "objectName": null,
+      "entityKey": "1d9db267-885c-21b1-de47-215068455951",
+      "tableName": "Employees",
+      "objectName": "Managers",
       "controllerName": null,
       "softDeleteColumn": null,
       "properties": [
         {
-          "propertyId": null,
-          "propertyName": "Id",
-          "modelPropertyName": null,
-          "isKey": true,
-          "isReadOnly": true,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
+          "propertyName": "EmployeeID",
+          "isKey": true
         },
         {
-          "propertyId": null,
-          "propertyName": "RoleName",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        }
-      ],
-      "entityRoles": null,
-      "entityRelations": null
-    },
-    {
-      "entityKey": "3C78639B-8991-440E-B80A-CA327D9F2825",
-      "tableName": "_BeGen_User",
-      "objectName": null,
-      "controllerName": null,
-      "softDeleteColumn": null,
-      "properties": [
-        {
-          "propertyId": null,
-          "propertyName": "Id",
-          "modelPropertyName": null,
-          "isKey": true,
-          "isReadOnly": true,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
+          "propertyName": "FirstName"
         },
         {
-          "propertyId": null,
-          "propertyName": "Name",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
+          "propertyName": "LastName"
         }
       ],
-      "entityRoles": null,
-      "entityRelations": [
-        {
-          "crossTableName": "_BeGen_CROSS_User_Role",
-          "entityReferencingColumnName": "UserId",
-          "entityPropertyName": "Roles",
-          "relatedEntityReferencingColumnName": "RoleId",
-          "relatedEntityPropertyName": "Users",
-          "validFromColumnName": null,
-          "validToColumnName": null,
-          "activeColumnName": null,
-          "showInEntity": true,
-          "showInRelatedEntity": false,
-          "relatedEntityKey": "D388B2CD-DED7-45D8-9423-F4416811B14B"
-        }
-      ]
+      "entityRoles": []
     }
   ],
-  "integrations": null
+  "integrations": []
 }
