@@ -343,7 +343,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, 0, "tab1", joinData);
 
-            if (filters != null)
+            if (filters != null && filters.Item1 != null && filters.Item1.Replace("(", "").Replace(")", "").Length > 0)
             {
                 query += $" AND {filters.Item1}";
             }
@@ -744,7 +744,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, 0, $"{dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight}", null);
 
-            if (filters != null)
+            if (filters != null && filters.Item1 != null && filters.Item1.Replace("(", "").Replace(")", "").Length > 0)
             {
                 queryBuilder.Append($" AND {filters.Item1}");
             }
@@ -1447,7 +1447,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 var permissionFilterObject = JsonSerializer.Deserialize<ComparerObject>(filter, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
                 var filters = permissionFilterObject?.ToSQLQuery(userName, entity, dbSchema, parameters.Count, $"tab{internalCounter}", null);
 
-                if (filters != null)
+                if (filters != null && filters.Item1 != null && filters.Item1.Replace("(", "").Replace(")", "").Length > 0)
                 {
                     queryBuilder.Append(" AND (");
                     queryBuilder.Append(filters.Item1);
