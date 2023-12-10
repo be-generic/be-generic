@@ -23,9 +23,9 @@ Using Be-Generic, you can skip the implementation of mundane code that can be au
 - Use Front-End and Back-End security filters to improve security and time of development
 
 > ℹ **SAMPLES** ℹ
->
+>https://github.com/be-generic/be-generic/tree/main/BeGeneric.Backend.Sample
 > Sample implementations can be found on the following links (more comming later):
->  - [HR application sample]([https://github.com/be-generic/be-generic-sample](https://github.com/be-generic/be-generic/tree/main/BeGeneric.Backend.Sample))
+>  - [HR application sample](https://github.com/be-generic/be-generic/tree/main/BeGeneric.Backend.Sample)
 <br />
 
 > ℹ **SETUP INSTRUCTIONS** ℹ
