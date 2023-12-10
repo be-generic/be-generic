@@ -25,7 +25,7 @@ Using Be-Generic, you can skip the implementation of mundane code that can be au
 > ℹ **SAMPLES** ℹ
 >
 > Sample implementations can be found on the following links (more comming later):
->  - [HR application sample](https://github.com/be-generic/be-generic-sample)
+>  - [HR application sample]([https://github.com/be-generic/be-generic-sample](https://github.com/be-generic/be-generic/tree/main/BeGeneric.Backend.Sample))
 <br />
 
 > ℹ **SETUP INSTRUCTIONS** ℹ
