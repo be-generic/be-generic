@@ -15,7 +15,7 @@ To install:
  
 > **Info**
 >
-> We recommend you check out the sample [configuration for HR application]() in this sample project, or do a quick overview of [Wiki](https://github.com/be-generic/be-generic/wiki) to get more information on how to properly set the configuration of be-generic.config.json
+> We recommend you check out the [Wiki](https://github.com/be-generic/be-generic/wiki) to get more information on how to properly set the configuration of be-generic.config.json
 
 
 ### License
