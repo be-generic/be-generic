@@ -7,6 +7,7 @@
 
         public string? AllowedValues { get; set; }
         public string? Regex { get; set; }
+        public bool? IsRequired { get; set; }
     }
 
 }

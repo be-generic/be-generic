@@ -29,11 +29,12 @@ WHERE TABLE_SCHEMA = @Schema
                     string colName = reader.GetFieldValue<string>(0);
                     string tabName = reader.GetFieldValue<string>(1);
                     string type = reader.GetFieldValue<string>(2);
-                    bool nullable = reader.GetFieldValue<string>(3) == "YES";
                     int? maxLength = reader.IsDBNull(4) ? null : reader.GetFieldValue<int>(4);
 
                     var meta = metadata.FirstOrDefault(x => string.Equals(x.TableName, tabName, StringComparison.OrdinalIgnoreCase) &&
                                                             string.Equals(x.ColumnName, colName, StringComparison.OrdinalIgnoreCase));
+
+                    bool nullable = reader.GetFieldValue<string>(3) == "YES" && !(meta?.IsRequired ?? false);
 
                     string allowedValueList = meta?.AllowedValues;
                     string regex = meta?.Regex;
