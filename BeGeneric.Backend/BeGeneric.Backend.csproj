@@ -5,14 +5,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 	  <PackageId>Be-Generic</PackageId>
-	  <Version>0.0.7.0</Version>
+	  <Version>0.0.7.1</Version>
 	  <Authors>Be-Generic</Authors>
 	  <Company>Be-Generic</Company>
 	  <PackageDescription>Generic backend that enables developers to quicly configure standard backend CRUD operations and overwrite behavior when they need to customizatize logic.</PackageDescription>
 	  <RepositoryUrl>https://github.com/be-generic/be-generic</RepositoryUrl>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageReleaseNotes>
-      Added isRequired support for properties
+      Fixed an issue with Swagger files
     </PackageReleaseNotes>
   </PropertyGroup>
 
