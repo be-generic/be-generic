@@ -112,6 +112,14 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     var actualDeleteAction = newController.Actions.Where(x => x.ActionName.EndsWith("Delete")).First();
                     newController.Actions.Remove(actualDeleteAction);
                 }
+                else
+                {
+                    var actualDeleteAction = newController.Actions.Where(x => x.ActionName.EndsWith("Delete")).First();
+                    actualDeleteAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status204NoContent));
+                    actualDeleteAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status401Unauthorized));
+                    actualDeleteAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status403Forbidden));
+                    actualDeleteAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status500InternalServerError));
+                }
 
                 var actualPostAction = newController.Actions.Where(x => x.ActionName.EndsWith("Post")).First();
                 if (entity.EntityRoles != null && entity.EntityRoles.Count > 0 && !entity.EntityRoles.Any(x => x.Post))
@@ -126,6 +134,11 @@ namespace BeGeneric.Backend.Services.BeGeneric
                         Action = actualPostAction,
                         ParameterName = "fieldValues",
                     });
+
+                    actualPostAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status204NoContent));
+                    actualPostAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status401Unauthorized));
+                    actualPostAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status403Forbidden));
+                    actualPostAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status500InternalServerError));
                 }
 
                 var actualPatchAction = newController.Actions.Where(x => x.ActionName.EndsWith("Patch")).First();
@@ -145,12 +158,22 @@ namespace BeGeneric.Backend.Services.BeGeneric
                         ParameterName = "fieldValues",
                     });
 
+                    actualPatchAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status204NoContent));
+                    actualPatchAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status401Unauthorized));
+                    actualPatchAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status403Forbidden));
+                    actualPatchAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status500InternalServerError));
+
                     actualPatchReturnAction.Parameters.Remove(actualPatchReturnAction.Parameters.Where(x => x.Name == "fieldValues").First());
                     actualPatchReturnAction.Parameters.Add(new ParameterModel(new DummyParameterInfo(dtoType, "fieldValues", actualPatchReturnAction.ActionMethod), new List<object>())
                     {
                         Action = actualPatchReturnAction,
                         ParameterName = "fieldValues",
                     });
+
+                    actualPatchReturnAction.Filters.Add(new ProducesResponseTypeAttribute(dtoType, StatusCodes.Status200OK));
+                    actualPatchReturnAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status401Unauthorized));
+                    actualPatchReturnAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status403Forbidden));
+                    actualPatchReturnAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status500InternalServerError));
                 }
 
                 var actualGetAction = newController.Actions.Where(x => x.ActionName.Contains("GetAll")).First();
