@@ -135,7 +135,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                         ParameterName = "fieldValues",
                     });
 
-                    actualPostAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status204NoContent));
+                    actualPostAction.Filters.Add(new ProducesResponseTypeAttribute(dtoType, StatusCodes.Status200OK));
                     actualPostAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status401Unauthorized));
                     actualPostAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status403Forbidden));
                     actualPostAction.Filters.Add(new ProducesResponseTypeAttribute(StatusCodes.Status500InternalServerError));
