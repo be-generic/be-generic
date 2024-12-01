@@ -1,4 +1,5 @@
 using BeGeneric.Backend;
+using BeGeneric.Backend.MsSql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,9 +12,10 @@ builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllersWithBeGeneric<Guid>(
-    builder.Configuration.GetConnectionString("connectionString"),
-    databaseSchema: "project_84"
-);
+        builder.Configuration.GetConnectionString("connectionString"),
+        databaseSchema: "project_84"
+     )
+    .UseSqlServer();
 
 var app = builder.Build();
 

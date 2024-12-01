@@ -1,4 +1,5 @@
-﻿using BeGeneric.Backend.Models;
+﻿using BeGeneric.Backend.Builder;
+using BeGeneric.Backend.Models;
 using BeGeneric.Backend.Services.BeGeneric.DatabaseStructure;
 using BeGeneric.Backend.Services.BeGeneric.Exceptions;
 using BeGeneric.Backend.Settings;
@@ -6,8 +7,6 @@ using BeGeneric.Helpers;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Data.Common;
-using System.Data.SqlClient;
-using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -24,6 +23,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
         protected readonly IDatabaseStructureService dbStructure;
         private readonly IAttachedActionService<T> attachedActionService;
         private readonly IDbConnection connection;
+        private readonly IBeGenericDatabaseProvider dbProvider;
 
         internal readonly string dbSchema = "dbo";
 
@@ -45,6 +45,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             IDatabaseStructureService dbStructure,
             IAttachedActionService<T> attachedActionService,
             IDbConnection connection,
+            IBeGenericDatabaseProvider dbProvider,
             ILogger logger = null)
         {
             entities = entityDefinitions.ProcessEntities();
@@ -53,6 +54,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             this.dbSchema = dbStructure.DataSchema;
             this.connection = connection;
             this.attachedActionService = attachedActionService;
+            this.dbProvider = dbProvider;
         }
 
         public async Task<string> Get(ClaimsPrincipal user, string controllerName, T id)
@@ -74,7 +76,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             }
 
             int tabCounter = 0;
-            List<SqlParameter> sqlParameters = new();
+            List<DbParameter> sqlParameters = new();
             List<Guid> entityIds = new();
 
             string query = GenerateSelectQuery(entity, entityIds, ref tabCounter, roleName, userName, sqlParameters, null, id);
@@ -97,16 +99,16 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             query += $" FOR JSON AUTO, INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER";
 
-            SqlConnection connection = this.connection as SqlConnection;
+            DbConnection connection = this.connection as DbConnection;
 
-            using DbCommand command = new SqlCommand(query, connection);
-            command.Parameters.Add(new SqlParameter("tab1_val", id));
+            using DbCommand command = dbProvider.GetDbCommand(query, connection);
+            command.Parameters.Add(dbProvider.GetDbParameter("tab1_val", id));
 
             command.Parameters.AddRange(sqlParameters.ToArray());
 
             if (filters != null)
             {
-                command.Parameters.AddRange(filters.Item3.Select(x => new SqlParameter(x.Item1, x.Item2)).ToArray());
+                command.Parameters.AddRange(filters.Item3.Select(x => dbProvider.GetDbParameter(x.Item1, x.Item2)).ToArray());
             }
 
             if (connection.State != System.Data.ConnectionState.Open)
@@ -200,7 +202,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 }
             }
 
-            List<SqlParameter> parameters = new();
+            List<DbParameter> parameters = new();
 
             string query = string.Empty;
             if (!string.IsNullOrEmpty(sortProperty) && sortProperty.Contains('.'))
@@ -233,7 +235,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             query += " FOR JSON AUTO";
 
-            SqlConnection connection = this.connection as SqlConnection;
+            DbConnection connection = (DbConnection)this.connection;
 
             totalCount = (await AggregateEntityAccess(user, entity, null, filterObject: permissionFilterObject))[0];
 
@@ -244,13 +246,13 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 filteredTotalCount = (await AggregateEntityAccess(user, entity, null, filterObjectWithPermissions))[0];
             }
 
-            using (SqlCommand command = new(query, connection))
+            using (DbCommand command = dbProvider.GetDbCommand(query, connection))
             {
                 command.Parameters.AddRange(parameters.ToArray());
 
                 if (filters != null)
                 {
-                    command.Parameters.AddRange(filters.Item3.Select(x => new SqlParameter(x.Item1, x.Item2)).ToArray());
+                    command.Parameters.AddRange(filters.Item3.Select(x => dbProvider.GetDbParameter(x.Item1, x.Item2)).ToArray());
                 }
 
                 if (connection.State != System.Data.ConnectionState.Open)
@@ -357,13 +359,13 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             query += " FOR JSON PATH";
 
-            SqlConnection connection = this.connection as SqlConnection;
+            DbConnection connection = (DbConnection)this.connection;
 
-            using (SqlCommand command = new(query, connection))
+            using (DbCommand command = dbProvider.GetDbCommand(query, connection))
             {
                 if (filters != null)
                 {
-                    command.Parameters.AddRange(filters.Item3.Select(x => new SqlParameter(x.Item1, x.Item2)).ToArray());
+                    command.Parameters.AddRange(filters.Item3.Select(x => dbProvider.GetDbParameter(x.Item1, x.Item2)).ToArray());
                 }
 
                 if (connection.State != System.Data.ConnectionState.Open)
@@ -436,9 +438,9 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             queryBuilder.AppendLine(@"SELECT * FROM @generated_keys");
 
-            SqlConnection connection = this.connection as SqlConnection;
+            DbConnection connection = (DbConnection)this.connection;
 
-            using DbCommand command = new SqlCommand(queryBuilder.ToString(), connection);
+            using DbCommand command = dbProvider.GetDbCommand(queryBuilder.ToString(), connection);
             int i = 0;
             List<Tuple<string, string>> errors = new();
 
@@ -482,7 +484,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                             actualValue = value1.ToString();
                         }
 
-                        command.Parameters.Add(new SqlParameter("PropertyValue" + i.ToString(), actualValue ?? DBNull.Value));
+                        command.Parameters.Add(dbProvider.GetDbParameter("PropertyValue" + i.ToString(), actualValue ?? DBNull.Value));
 
                         i++;
                     }
@@ -491,7 +493,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 {
                     if (string.Equals(prop.DefaultValue, "$user", StringComparison.OrdinalIgnoreCase))
                     {
-                        command.Parameters.Add(new SqlParameter("PropertyValue" + i.ToString(), string.IsNullOrEmpty(userId) ? DBNull.Value : userId));
+                        command.Parameters.Add(dbProvider.GetDbParameter("PropertyValue" + i.ToString(), string.IsNullOrEmpty(userId) ? DBNull.Value : userId));
                         i++;
                     }
                     else
@@ -542,7 +544,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     string crossTableQuery = qb2.ToString();
                     if (!string.IsNullOrEmpty(crossTableQuery))
                     {
-                        using DbCommand crossTableCommand = new SqlCommand(crossTableQuery, connection);
+                        using DbCommand crossTableCommand = dbProvider.GetDbCommand(crossTableQuery, connection);
                         crossTableCommand.Transaction = transaction;
                         await crossTableCommand.ExecuteNonQueryAsync();
                     }
@@ -630,11 +632,11 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             queryBuilder.Append($"'{id}', '{relatedEntity.Id}')");
 
-            SqlConnection connection = this.connection as SqlConnection;
+            DbConnection connection = (DbConnection)this.connection;
 
             try
             {
-                using DbCommand command = new SqlCommand(queryBuilder.ToString(), connection);
+                using DbCommand command = dbProvider.GetDbCommand(queryBuilder.ToString(), connection);
                 if (connection.State != System.Data.ConnectionState.Open)
                 {
                     connection.Open();
@@ -716,7 +718,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                         errors.Add(new(error, prop.ModelPropertyName ?? prop.PropertyName));
                     }
 
-                    parameters.Add(new SqlParameter("PropertyValue" + i.ToString(), actualValue ?? DBNull.Value));
+                    parameters.Add(dbProvider.GetDbParameter("PropertyValue" + i.ToString(), actualValue ?? DBNull.Value));
 
                     i++;
                 }
@@ -749,23 +751,23 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 queryBuilder.Append($" AND {filters.Item1}");
             }
 
-            SqlConnection connection = this.connection as SqlConnection;
+            DbConnection connection = (DbConnection)this.connection;
             T id1;
-            using DbCommand command = new SqlCommand(queryBuilder.ToString(), connection);
+            using DbCommand command = dbProvider.GetDbCommand(queryBuilder.ToString(), connection);
             if (id != null)
             {
                 id1 = id;
-                command.Parameters.Add(new SqlParameter("ID", id));
+                command.Parameters.Add(dbProvider.GetDbParameter("ID", id));
             }
             else
             {
                 id1 = (T)stringParsers[typeof(T)](values[entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.ToLowerInvariant() ?? "id"].ToString());
-                command.Parameters.Add(new SqlParameter("ID", values[entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.ToLowerInvariant() ?? "id"].ToString()));
+                command.Parameters.Add(dbProvider.GetDbParameter("ID", values[entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.ToLowerInvariant() ?? "id"].ToString()));
             }
 
             if (filters != null)
             {
-                command.Parameters.AddRange(filters.Item3.Select(x => new SqlParameter(x.Item1, x.Item2)).ToArray());
+                command.Parameters.AddRange(filters.Item3.Select(x => dbProvider.GetDbParameter(x.Item1, x.Item2)).ToArray());
             }
 
             command.Parameters.AddRange(parameters.ToArray());
@@ -832,7 +834,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             string crossTableQuery = qb2.ToString();
             if (!string.IsNullOrEmpty(crossTableQuery))
             {
-                using DbCommand crossTableCommand = new SqlCommand(crossTableQuery, connection);
+                using DbCommand crossTableCommand = dbProvider.GetDbCommand(crossTableQuery, connection);
                 crossTableCommand.Transaction = transaction;
                 await crossTableCommand.ExecuteNonQueryAsync();
             }
@@ -888,10 +890,10 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             queryBuilder.Append($"WHERE {dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight}=@ID");
 
-            SqlConnection connection = this.connection as SqlConnection;
+            DbConnection connection = (DbConnection)this.connection;
 
-            using DbCommand command = new SqlCommand(queryBuilder.ToString(), connection);
-            command.Parameters.Add(new SqlParameter("ID", id));
+            using DbCommand command = dbProvider.GetDbCommand(queryBuilder.ToString(), connection);
+            command.Parameters.Add(dbProvider.GetDbParameter("ID", id));
 
             string oneEntry = await Get(user, controllerName, id);
 
@@ -973,9 +975,9 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             queryBuilder.Append($" WHERE {dbStructure.ColumnDelimiterLeft}{propertyFrom}{dbStructure.ColumnDelimiterRight}='{id}' AND {dbStructure.ColumnDelimiterLeft}{propertyTo}{dbStructure.ColumnDelimiterRight}='{relatedEntityId}'");
 
-            SqlConnection connection = this.connection as SqlConnection;
+            DbConnection connection = (DbConnection)this.connection;
 
-            using DbCommand command = new SqlCommand(queryBuilder.ToString(), connection);
+            using DbCommand command = dbProvider.GetDbCommand(queryBuilder.ToString(), connection);
 
             if (connection.State != System.Data.ConnectionState.Open)
             {
@@ -1164,12 +1166,12 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 countQuery += ")";
             }
 
-            SqlConnection connection = this.connection as SqlConnection;
+            DbConnection connection = (DbConnection)this.connection;
 
-            using SqlCommand command = new(countQuery, connection);
+            using DbCommand command = dbProvider.GetDbCommand(countQuery, connection);
             if (filterObjectWithPermissions != null)
             {
-                command.Parameters.AddRange(filters.Item3.Select(x => new SqlParameter(x.Item1, x.Item2)).ToArray());
+                command.Parameters.AddRange(filters.Item3.Select(x => dbProvider.GetDbParameter(x.Item1, x.Item2)).ToArray());
             }
 
             if (connection.State != System.Data.ConnectionState.Open)
@@ -1318,7 +1320,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             return queryBuilder.ToString();
         }
 
-        private string GenerateSelectQuery(Entity entity, IEnumerable<Guid> entities, ref int counter, string roleName, string userName, List<SqlParameter> parameters, string filterProperty = null, object filterValue = null)
+        private string GenerateSelectQuery(Entity entity, IEnumerable<Guid> entities, ref int counter, string roleName, string userName, List<DbParameter> parameters, string filterProperty = null, object filterValue = null)
         {
             string filter = AuthorizeSubentity(roleName, userName, entity);
             StringBuilder queryBuilder = new();
@@ -1453,7 +1455,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     queryBuilder.Append(filters.Item1);
                     queryBuilder.Append(")");
 
-                    parameters.AddRange(filters.Item3.Select(x => new SqlParameter(x.Item1, x.Item2)).ToArray());
+                    parameters.AddRange(filters.Item3.Select(x => dbProvider.GetDbParameter(x.Item1, x.Item2)).ToArray());
                 }
             }
 

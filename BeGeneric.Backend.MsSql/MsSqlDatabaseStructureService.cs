@@ -1,7 +1,8 @@
-﻿using BeGeneric.Backend.Settings;
+﻿using BeGeneric.Backend.Services.BeGeneric.DatabaseStructure;
+using BeGeneric.Backend.Settings;
 using System.Data.SqlClient;
 
-namespace BeGeneric.Backend.Services.BeGeneric.DatabaseStructure
+namespace BeGeneric.Backend.MsSql
 {
     public class MsSqlDatabaseStructureService : IDatabaseStructureService
     {

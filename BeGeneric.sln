@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BeGeneric.Backend", "BeGene
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BeGeneric.Backend.Sample", "BeGeneric.Backend.Sample\BeGeneric.Backend.Sample.csproj", "{EBCB5905-B7EC-4E62-B714-07AAD0E7FA73}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeGeneric.Backend.MsSql", "BeGeneric.Backend.MsSql\BeGeneric.Backend.MsSql.csproj", "{8012CB08-AE0D-4509-9E55-CEF79B954A6F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,6 +31,10 @@ Global
 		{EBCB5905-B7EC-4E62-B714-07AAD0E7FA73}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EBCB5905-B7EC-4E62-B714-07AAD0E7FA73}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EBCB5905-B7EC-4E62-B714-07AAD0E7FA73}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8012CB08-AE0D-4509-9E55-CEF79B954A6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8012CB08-AE0D-4509-9E55-CEF79B954A6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8012CB08-AE0D-4509-9E55-CEF79B954A6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8012CB08-AE0D-4509-9E55-CEF79B954A6F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
