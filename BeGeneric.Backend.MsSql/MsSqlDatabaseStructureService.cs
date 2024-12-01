@@ -1,4 +1,4 @@
-﻿using BeGeneric.Backend.Services.BeGeneric.DatabaseStructure;
+﻿using BeGeneric.Backend.Services.GenericBackend.DatabaseStructure;
 using BeGeneric.Backend.Settings;
 using System.Data.SqlClient;
 

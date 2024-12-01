@@ -1,4 +1,4 @@
-﻿using BeGeneric.Backend.Models;
+﻿using BeGeneric.Backend.GenericModels;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace BeGeneric.Backend.Services.Common

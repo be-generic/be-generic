@@ -1,4 +1,4 @@
-﻿namespace BeGeneric.Backend.Services.BeGeneric
+﻿namespace BeGeneric.Backend.Services.GenericBackend
 {
     public class SummaryRequestObject
     {

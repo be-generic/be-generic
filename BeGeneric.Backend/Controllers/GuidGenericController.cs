@@ -1,4 +1,4 @@
-﻿using BeGeneric.Backend.Services.BeGeneric;
+﻿using BeGeneric.Backend.Services.GenericBackend;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BeGeneric.Backend.Controllers

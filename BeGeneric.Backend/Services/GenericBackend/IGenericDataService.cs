@@ -1,8 +1,8 @@
 ﻿using System.Security.Claims;
 using System.Text.Json.Nodes;
-using Endpoint = BeGeneric.Backend.Models.Endpoint;
+using Endpoint = BeGeneric.Backend.GenericModels.Endpoint;
 
-namespace BeGeneric.Backend.Services.BeGeneric
+namespace BeGeneric.Backend.Services.GenericBackend
 {
     public interface IGenericDataService<T>
     {

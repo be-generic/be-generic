@@ -1,7 +1,7 @@
-﻿using BeGeneric.GenericModels;
+﻿using BeGeneric.Backend.GenericModels;
 using System.Text.Json;
 
-namespace BeGeneric.Backend.Services.BeGeneric
+namespace BeGeneric.Backend.Services.GenericBackend
 {
     public interface IAttachedActionService<T>
     {
@@ -30,7 +30,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
     public class ActionData<T>
     {
         public T Id { get; set; }
-        public int? Page { get; set; } 
+        public int? Page { get; set; }
         public int PageSize { get; set; }
         public string? SortProperty { get; set; }
         public string? SortOrder { get; set; }

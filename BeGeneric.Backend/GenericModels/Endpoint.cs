@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace BeGeneric.Backend.Models
+namespace BeGeneric.Backend.GenericModels
 {
     public class Endpoint
     {
@@ -17,7 +17,7 @@ namespace BeGeneric.Backend.Models
         public int? DefaultPageSize { get; set; }
         public string DefaultSortOrderProperty { get; set; }
         public string DefaultSortOrder { get; set; }
-        
+
 
         public virtual Entity StartingEntity { get; set; }
         public virtual Role Role { get; set; }

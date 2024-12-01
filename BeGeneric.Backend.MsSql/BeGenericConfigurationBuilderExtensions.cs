@@ -1,8 +1,8 @@
 ﻿using BeGeneric.Backend.Builder;
-using BeGeneric.Backend.Services.BeGeneric.DatabaseStructure;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data.SqlClient;
 using System.Data;
+using BeGeneric.Backend.Services.GenericBackend.DatabaseStructure;
 
 namespace BeGeneric.Backend.MsSql
 {

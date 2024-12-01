@@ -1,4 +1,4 @@
-﻿namespace BeGeneric.Backend.Services.BeGeneric.Exceptions
+﻿namespace BeGeneric.Backend.Services.GenericBackend.Exceptions
 {
     public enum SecurityStatus
     {

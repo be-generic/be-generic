@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace BeGeneric.Backend.Models
+namespace BeGeneric.Backend.GenericModels
 {
     public class Role
     {

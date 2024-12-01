@@ -1,6 +1,6 @@
 ﻿using BeGeneric.Backend.Builder;
-using BeGeneric.Backend.Services.BeGeneric;
 using BeGeneric.Backend.Services.Common;
+using BeGeneric.Backend.Services.GenericBackend;
 using BeGeneric.Backend.Settings;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.Extensions.Configuration;

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace BeGeneric.Backend.Models
+namespace BeGeneric.Backend.GenericModels
 {
     public class EndpointProperty
     {
@@ -13,7 +13,7 @@ namespace BeGeneric.Backend.Models
 
         public string PropertyName { get; set; }
         public string PropertyPath { get; set; }
-        
+
 
         public virtual Endpoint Endpoint { get; set; }
     }

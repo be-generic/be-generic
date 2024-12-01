@@ -1,9 +1,10 @@
 ﻿using BeGeneric.Backend.Builder;
-using BeGeneric.Backend.Models;
-using BeGeneric.Backend.Services.BeGeneric.DatabaseStructure;
+using BeGeneric.Backend.GenericModels;
 using BeGeneric.Backend.Services.BeGeneric.Exceptions;
+using BeGeneric.Backend.Services.GenericBackend.DatabaseStructure;
+using BeGeneric.Backend.Services.GenericBackend.Exceptions;
+using BeGeneric.Backend.Services.GenericBackend.Helpers;
 using BeGeneric.Backend.Settings;
-using BeGeneric.Helpers;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Data.Common;
@@ -12,9 +13,9 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using Endpoint = BeGeneric.Backend.Models.Endpoint;
+using Endpoint = BeGeneric.Backend.GenericModels.Endpoint;
 
-namespace BeGeneric.Backend.Services.BeGeneric
+namespace BeGeneric.Backend.Services.GenericBackend
 {
     public class GenericDataService<T> : IGenericDataService<T>
     {
@@ -51,7 +52,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             entities = entityDefinitions.ProcessEntities();
             this.logger = logger;
             this.dbStructure = dbStructure;
-            this.dbSchema = dbStructure.DataSchema;
+            dbSchema = dbStructure.DataSchema;
             this.connection = connection;
             this.attachedActionService = attachedActionService;
             this.dbProvider = dbProvider;
@@ -64,7 +65,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             string userName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null;
             string roleName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null;
 
-            var action = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Get, ActionOrderType.Before);
+            var action = attachedActionService.GetAttachedAction(controllerName, ActionType.Get, ActionOrderType.Before);
             if (action != null)
             {
                 await action(new ActionData<T>()
@@ -111,7 +112,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 command.Parameters.AddRange(filters.Item3.Select(x => dbProvider.GetDbParameter(x.Item1, x.Item2)).ToArray());
             }
 
-            if (connection.State != System.Data.ConnectionState.Open)
+            if (connection.State != ConnectionState.Open)
             {
                 connection.Open();
             }
@@ -129,7 +130,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             if (success)
             {
                 string finalResponse = response.ToString();
-                var afterAction = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Get, ActionOrderType.After);
+                var afterAction = attachedActionService.GetAttachedAction(controllerName, ActionType.Get, ActionOrderType.After);
                 if (afterAction != null)
                 {
                     await afterAction(new ActionData<T>()
@@ -156,7 +157,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             string? userName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null;
             string? roleName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null;
 
-            var action = this.attachedActionService.GetAttachedAction(controllerName, ActionType.GetAll, ActionOrderType.Before);
+            var action = attachedActionService.GetAttachedAction(controllerName, ActionType.GetAll, ActionOrderType.Before);
             if (action != null)
             {
                 await action(new ActionData<T>()
@@ -255,7 +256,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     command.Parameters.AddRange(filters.Item3.Select(x => dbProvider.GetDbParameter(x.Item1, x.Item2)).ToArray());
                 }
 
-                if (connection.State != System.Data.ConnectionState.Open)
+                if (connection.State != ConnectionState.Open)
                 {
                     connection.Open();
                 }
@@ -272,10 +273,10 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 ""recordsTotal"": {totalCount},
                 ""recordsFiltered"": {filteredTotalCount},
                 ""data"": {(entitiyList.Length == 0 ? "[]" : entitiyList)},
-                ""aggregation"": { (summaries != null ? ("[" + string.Join(", ", await AggregateEntityAccess(user, entity, null, filterObjectWithPermissions, summaries)) + "]") : "[]")}
+                ""aggregation"": {(summaries != null ? "[" + string.Join(", ", await AggregateEntityAccess(user, entity, null, filterObjectWithPermissions, summaries)) + "]" : "[]")}
             }}";
 
-            var afterAction = this.attachedActionService.GetAttachedAction(controllerName, ActionType.GetAll, ActionOrderType.After);
+            var afterAction = attachedActionService.GetAttachedAction(controllerName, ActionType.GetAll, ActionOrderType.After);
             if (afterAction != null)
             {
                 await afterAction(new ActionData<T>()
@@ -298,7 +299,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
         {
             (Entity entity, string permissionsFilter, string _) = await Authorize(user, endpoint.StartingEntity.ControllerName, getAll: true);
 
-            var action = this.attachedActionService.GetAttachedAction(endpoint.EndpointPath, ActionType.GetAll, ActionOrderType.Before);
+            var action = attachedActionService.GetAttachedAction(endpoint.EndpointPath, ActionType.GetAll, ActionOrderType.Before);
             if (action != null)
             {
                 await action(new ActionData<T>()
@@ -368,7 +369,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     command.Parameters.AddRange(filters.Item3.Select(x => dbProvider.GetDbParameter(x.Item1, x.Item2)).ToArray());
                 }
 
-                if (connection.State != System.Data.ConnectionState.Open)
+                if (connection.State != ConnectionState.Open)
                 {
                     connection.Open();
                 }
@@ -384,7 +385,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             string finalResult = entitiyList.Length == 0 ? "[]" : entitiyList;
 
-            var afterAction = this.attachedActionService.GetAttachedAction(endpoint.EndpointPath, ActionType.GetAll, ActionOrderType.After);
+            var afterAction = attachedActionService.GetAttachedAction(endpoint.EndpointPath, ActionType.GetAll, ActionOrderType.After);
             if (afterAction != null)
             {
                 await afterAction(new ActionData<T>()
@@ -409,7 +410,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             (Entity entity, string permissionsFilter, string userId) = await Authorize(user, controllerName, post: true);
 
-            var action = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Post, ActionOrderType.Before);
+            var action = attachedActionService.GetAttachedAction(controllerName, ActionType.Post, ActionOrderType.Before);
             if (action != null)
             {
                 await action(new ActionData<T>()
@@ -427,7 +428,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             var usedProperties = properties
                 .Where(prop => (values.ContainsKey((prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant()) || !string.IsNullOrEmpty(prop.DefaultValue))
                     && (!string.IsNullOrEmpty(prop.DefaultValue) || prop.ReferencingEntityId != null ||
-                        (values[(prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant()] as JsonValue) != null));
+                        values[(prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant()] as JsonValue != null));
 
             StringBuilder queryBuilder = new();
             queryBuilder.AppendLine(@$"DECLARE @generated_keys table(id {dbTypeParsers[typeof(T)]});");
@@ -517,7 +518,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             try
             {
-                if (connection.State != System.Data.ConnectionState.Open)
+                if (connection.State != ConnectionState.Open)
                 {
                     connection.Open();
                 }
@@ -554,7 +555,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
                     var savedEntity = await Get(user, controllerName, newId);
 
-                    var afterAction = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Post, ActionOrderType.After);
+                    var afterAction = attachedActionService.GetAttachedAction(controllerName, ActionType.Post, ActionOrderType.After);
                     if (afterAction != null)
                     {
                         await afterAction(new ActionData<T>()
@@ -637,7 +638,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             try
             {
                 using DbCommand command = dbProvider.GetDbCommand(queryBuilder.ToString(), connection);
-                if (connection.State != System.Data.ConnectionState.Open)
+                if (connection.State != ConnectionState.Open)
                 {
                     connection.Open();
                 }
@@ -656,12 +657,12 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             (Entity entity, string permissionsFilter, string _) = await Authorize(user, controllerName, put: true);
 
-            var action = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Patch, ActionOrderType.Before);
+            var action = attachedActionService.GetAttachedAction(controllerName, ActionType.Patch, ActionOrderType.Before);
             if (action != null)
             {
                 await action(new ActionData<T>()
                 {
-                    Id = id ?? (T)stringParsers[typeof(T)]((values[entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.ToLowerInvariant() ?? "id"].ToString())),
+                    Id = id ?? (T)stringParsers[typeof(T)](values[entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.ToLowerInvariant() ?? "id"].ToString()),
                     InputParameterData = JsonSerializer.Serialize(fieldValues),
                     UserName = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst("id").Value : null,
                     Role = user.Identity.IsAuthenticated ? (user.Identity as ClaimsIdentity).FindFirst(ClaimsIdentity.DefaultRoleClaimType).Value : null,
@@ -777,7 +778,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 throw new GenericBackendSecurityException(SecurityStatus.BadRequest, errors.Select(x => new { Error = x.Item1, Property = x.Item2 }));
             }
 
-            if (connection.State != System.Data.ConnectionState.Open)
+            if (connection.State != ConnectionState.Open)
             {
                 connection.Open();
             }
@@ -841,7 +842,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             await transaction.CommitAsync();
 
-            var afterAction = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Patch, ActionOrderType.After);
+            var afterAction = attachedActionService.GetAttachedAction(controllerName, ActionType.Patch, ActionOrderType.After);
             if (afterAction != null)
             {
                 await afterAction(new ActionData<T>()
@@ -861,7 +862,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
         {
             (Entity entity, string permissionsFilter, string _) = await Authorize(user, controllerName, delete: true);
 
-            var action = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Delete, ActionOrderType.Before);
+            var action = attachedActionService.GetAttachedAction(controllerName, ActionType.Delete, ActionOrderType.Before);
             if (action != null)
             {
                 await action(new ActionData<T>()
@@ -897,14 +898,14 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             string oneEntry = await Get(user, controllerName, id);
 
-            if (connection.State != System.Data.ConnectionState.Open)
+            if (connection.State != ConnectionState.Open)
             {
                 connection.Open();
             }
 
             await command.ExecuteNonQueryAsync();
 
-            var afterAction = this.attachedActionService.GetAttachedAction(controllerName, ActionType.Delete, ActionOrderType.After);
+            var afterAction = attachedActionService.GetAttachedAction(controllerName, ActionType.Delete, ActionOrderType.After);
             if (afterAction != null)
             {
                 await afterAction(new ActionData<T>()
@@ -979,7 +980,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             using DbCommand command = dbProvider.GetDbCommand(queryBuilder.ToString(), connection);
 
-            if (connection.State != System.Data.ConnectionState.Open)
+            if (connection.State != ConnectionState.Open)
             {
                 connection.Open();
             }
@@ -1002,7 +1003,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 if (crossValue is JsonArray crossValueArray && crossValueArray != null)
                 {
                     var tmp1 = crossValueArray.ToArray().Select(x => (Guid)x[entity.Properties.First(x => x.IsKey).CamelCaseName() ?? "id"]);
-                    
+
                     if (clearRelations)
                     {
                         if (!string.IsNullOrEmpty(crossEntity.ValidToColumnName))
@@ -1073,7 +1074,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 Array.Empty<string>();
 
             StringBuilder sortBuilder = new();
-            
+
             if (sortTable.Length > 1)
             {
                 sortBuilder.Append($"JSON_VALUE({dbStructure.ColumnDelimiterLeft}{sortTable[0]}{dbStructure.ColumnDelimiterRight}, '$");
@@ -1174,20 +1175,20 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 command.Parameters.AddRange(filters.Item3.Select(x => dbProvider.GetDbParameter(x.Item1, x.Item2)).ToArray());
             }
 
-            if (connection.State != System.Data.ConnectionState.Open)
+            if (connection.State != ConnectionState.Open)
             {
                 connection.Open();
             }
 
             if (summaries == null)
             {
-                return new string[] { ((await command.ExecuteScalarAsync() as int?) ?? 0).ToString() };
+                return new string[] { (await command.ExecuteScalarAsync() as int? ?? 0).ToString() };
             }
             else
             {
                 List<string> result = new();
                 using DbDataReader dr = await command.ExecuteReaderAsync();
-                if (!(await dr.ReadAsync()))
+                if (!await dr.ReadAsync())
                 {
                     return null;
                 }
@@ -1326,7 +1327,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
             StringBuilder queryBuilder = new();
             int internalCounter = ++counter;
 
-            queryBuilder.AppendLine($"SELECT tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} AS {dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.CamelCaseName() ?? "id"}{dbStructure.ColumnDelimiterRight} ");
+            queryBuilder.AppendLine($"SELECT tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} AS {dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.CamelCaseName() ?? "id"}{dbStructure.ColumnDelimiterRight} ");
 
             foreach (Property property in entity.Properties.Where(x => !x.IsKey && !x.IsHidden))
             {
@@ -1379,8 +1380,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     whereQueryAddition += $@" AND ({dbStructure.ColumnDelimiterLeft}{relation.ValidToColumnName}{dbStructure.ColumnDelimiterRight} IS NULL OR {dbStructure.ColumnDelimiterLeft}{relation.ValidToColumnName}{dbStructure.ColumnDelimiterRight} >= GETDATE()) ";
                 }
 
-                queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity2, entities.Union(new Guid[] { relation.Entity2Id }), ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{relation.Entity2.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} IN (SELECT {dbStructure.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} FROM " +
-                    $"{dbSchema}.{dbStructure.ColumnDelimiterLeft}{relation.CrossTableName}{dbStructure.ColumnDelimiterRight} WHERE {dbStructure.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} {whereQueryAddition}) " +
+                queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity2, entities.Union(new Guid[] { relation.Entity2Id }), ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{relation.Entity2.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} IN (SELECT {dbStructure.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} FROM " +
+                    $"{dbSchema}.{dbStructure.ColumnDelimiterLeft}{relation.CrossTableName}{dbStructure.ColumnDelimiterRight} WHERE {dbStructure.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} {whereQueryAddition}) " +
                     $"FOR JSON AUTO, INCLUDE_NULL_VALUES) AS {dbStructure.ColumnDelimiterLeft}{relation.Entity1PropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
             }
 
@@ -1418,9 +1419,9 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 }
 
                 queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity1, entities.Union(new Guid[] { relation.Entity1Id }), ref counter, roleName, userName, parameters)} AND " +
-                    $"{dbStructure.ColumnDelimiterLeft}{relation.Entity1.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} IN " +
+                    $"{dbStructure.ColumnDelimiterLeft}{relation.Entity1.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} IN " +
                     $"(SELECT {dbStructure.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{relation.CrossTableName}{dbStructure.ColumnDelimiterRight} " +
-                    $"WHERE {dbStructure.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight} {whereQueryAddition}) FOR JSON AUTO, INCLUDE_NULL_VALUES) " +
+                    $"WHERE {dbStructure.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} {whereQueryAddition}) FOR JSON AUTO, INCLUDE_NULL_VALUES) " +
                     $"AS {dbStructure.ColumnDelimiterLeft}{relation.Entity2PropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
             }
 
@@ -1428,11 +1429,11 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             if (filterProperty != null)
             {
-                queryBuilder.AppendLine($"WHERE tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight}={filterProperty}");
+                queryBuilder.AppendLine($"WHERE tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight}={filterProperty}");
             }
             else if (filterValue != null)
             {
-                queryBuilder.AppendLine($"WHERE tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID" }{dbStructure.ColumnDelimiterRight}=@tab{internalCounter}_val");
+                queryBuilder.AppendLine($"WHERE tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight}=@tab{internalCounter}_val");
             }
             else
             {
@@ -1538,7 +1539,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                         (r.Post || !post) &&
                         (r.Put || !put) &&
                         (r.Delete || !delete))
-                    .OrderBy(x => (getAll || getOne) ? x.ViewFilter : x.EditFilter)
+                    .OrderBy(x => getAll || getOne ? x.ViewFilter : x.EditFilter)
                     .FirstOrDefault();
 
                 entity = er?.Entity ?? entity;
@@ -1560,7 +1561,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 }
             }
 
-            string permissionsFilter = (getAll || getOne) ? er?.ViewFilter : er?.EditFilter;
+            string permissionsFilter = getAll || getOne ? er?.ViewFilter : er?.EditFilter;
 
             if (!string.IsNullOrEmpty(permissionsFilter))
             {

@@ -1,7 +1,7 @@
-﻿using BeGeneric.Backend.Models;
+﻿using BeGeneric.Backend.GenericModels;
 using BeGeneric.Backend.Settings;
 
-namespace BeGeneric.Helpers
+namespace BeGeneric.Backend.Services.GenericBackend.Helpers
 {
     internal static class EntityLoaderHelper
     {
@@ -18,7 +18,7 @@ namespace BeGeneric.Helpers
             lock (lockObject)
             {
                 if (entityIds.Count == 0)
-                { 
+                {
                     foreach (var entity in entities)
                     {
                         entityIds.Add(GetEntityDefinitionKey(entity), Guid.NewGuid());

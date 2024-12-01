@@ -1,6 +1,6 @@
-﻿namespace BeGeneric.Backend.Services.BeGeneric
+﻿namespace BeGeneric.Backend.Services.GenericBackend
 {
-    public class AttachedActionService<T>: IAttachedActionService<T>
+    public class AttachedActionService<T> : IAttachedActionService<T>
     {
         private Dictionary<string, Dictionary<ActionType, Dictionary<ActionOrderType, Func<ActionData<T>, Task>>>> attachedActions = new Dictionary<string, Dictionary<ActionType, Dictionary<ActionOrderType, Func<ActionData<T>, Task>>>>();
 

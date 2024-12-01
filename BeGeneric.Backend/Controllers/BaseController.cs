@@ -1,4 +1,4 @@
-﻿using BeGeneric.Backend.Services.BeGeneric.Exceptions;
+﻿using BeGeneric.Backend.Services.GenericBackend.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BeGeneric.Backend.Controllers

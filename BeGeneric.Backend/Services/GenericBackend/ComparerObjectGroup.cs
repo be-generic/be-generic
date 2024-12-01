@@ -1,7 +1,7 @@
-﻿using BeGeneric.Backend.Models;
+﻿using BeGeneric.Backend.GenericModels;
 using System.Security.Claims;
 
-namespace BeGeneric.Backend.Services.BeGeneric
+namespace BeGeneric.Backend.Services.GenericBackend
 {
     public class ComparerObjectGroup
     {

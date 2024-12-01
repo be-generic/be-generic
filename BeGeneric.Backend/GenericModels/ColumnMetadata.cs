@@ -1,4 +1,4 @@
-﻿namespace BeGeneric.Backend.Models
+﻿namespace BeGeneric.Backend.GenericModels
 {
     public class ColumnMetadata
     {

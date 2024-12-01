@@ -1,4 +1,4 @@
-﻿namespace BeGeneric.Backend.Services.BeGeneric.DatabaseStructure
+﻿namespace BeGeneric.Backend.Services.GenericBackend.DatabaseStructure
 {
     public class DatabaseFieldData
     {

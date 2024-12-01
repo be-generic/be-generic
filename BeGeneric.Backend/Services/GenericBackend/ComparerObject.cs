@@ -1,10 +1,11 @@
-﻿using BeGeneric.Helpers;
-using BeGeneric.Backend.Models;
-using BeGeneric.Backend.Services.BeGeneric.Exceptions;
+﻿using BeGeneric.Backend.Services.BeGeneric.Exceptions;
 using System.Text;
 using System.Text.Json;
+using BeGeneric.Backend.Services.GenericBackend.Exceptions;
+using BeGeneric.Backend.GenericModels;
+using BeGeneric.Backend.Services.GenericBackend.Helpers;
 
-namespace BeGeneric.Backend.Services.BeGeneric
+namespace BeGeneric.Backend.Services.GenericBackend
 {
     public class ComparerObject : ComparerObjectGroup
     {
@@ -14,7 +15,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
         public override Tuple<string, int, List<Tuple<string, object>>> ToSQLQuery(string userName, Entity entity, string dbSchema, int counter, string originTableAlias, Dictionary<string, SelectPropertyData> joinData)
         {
-            if (this.Comparisons != null)
+            if (Comparisons != null)
             {
                 return base.ToSQLQuery(userName, entity, dbSchema, counter, originTableAlias, joinData);
             }
@@ -144,9 +145,9 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
                     if (property == null)
                     {
-                        property = iterationEntity.ReferencingProperties.Where(x => string.Equals(x.RelatedModelPropertyName ?? (
+                        property = iterationEntity.ReferencingProperties.Where(x => string.Equals(x.RelatedModelPropertyName ??
                             x.Entity.CamelCaseName() + "_" + x.CamelCaseName()
-                            ), prop, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                            , prop, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                         referencingProperty = property != null;
                     }
 
