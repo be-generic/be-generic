@@ -1,6 +1,5 @@
 ﻿using BeGeneric.Backend.Builder;
 using BeGeneric.Backend.GenericModels;
-using BeGeneric.Backend.Services.BeGeneric.Exceptions;
 using BeGeneric.Backend.Services.GenericBackend.DatabaseStructure;
 using BeGeneric.Backend.Services.GenericBackend.Exceptions;
 using BeGeneric.Backend.Services.GenericBackend.Helpers;

@@ -19,7 +19,7 @@ namespace BeGeneric.Backend.MsSql
             };
 
             builder.Services.AddSingleton(databaseStructureService);
-            builder.Services.AddSingleton<MsSqlDatabaseProvider>();
+            builder.Services.AddSingleton<IBeGenericDatabaseProvider, MsSqlDatabaseProvider>();
 
             builder.Services.AddScoped<IDbConnection>((x) =>
             {
