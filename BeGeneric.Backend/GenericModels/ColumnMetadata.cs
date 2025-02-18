@@ -1,12 +1,10 @@
-﻿namespace BeGeneric.Backend.Models
+﻿namespace BeGeneric.Backend.GenericModels;
+
+public class ColumnMetadata
 {
-    public class ColumnMetadata
-    {
-        public string TableName { get; set; }
-        public string ColumnName { get; set; }
+    public string TableName { get; set; }
+    public string ColumnName { get; set; }
 
-        public string AllowedValues { get; set; }
-        public string Regex { get; set; }
-    }
-
+    public string AllowedValues { get; set; }
+    public string Regex { get; set; }
 }

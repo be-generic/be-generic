@@ -1,12 +1,11 @@
-﻿namespace BeGeneric.Backend.Services.BeGeneric.Exceptions
+﻿namespace BeGeneric.Backend.Services.GenericBackend.Exceptions;
+
+public enum SecurityStatus
 {
-    public enum SecurityStatus
-    {
-        Ok,
-        NotFound,
-        Unauthorised,
-        Forbidden,
-        BadRequest,
-        Conflict,
-    }
+    Ok,
+    NotFound,
+    Unauthorised,
+    Forbidden,
+    BadRequest,
+    Conflict,
 }

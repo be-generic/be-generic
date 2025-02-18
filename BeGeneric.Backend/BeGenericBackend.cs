@@ -1,21 +1,21 @@
-﻿using BeGeneric.Backend.Services.BeGeneric;
-using BeGeneric.Backend.Services.BeGeneric.DatabaseStructure;
-using BeGeneric.Backend.Services.Common;
+﻿using BeGeneric.Backend.Services.Common;
+using BeGeneric.Backend.Services.GenericBackend;
+using BeGeneric.Backend.Services.GenericBackend.DatabaseStructure;
 using BeGeneric.Backend.Settings;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.FeatureManagement;
 using System.Data;
-using System.Data.SqlClient;
 using System.Text.Json;
 
-namespace BeGeneric.Backend
+namespace BeGeneric.Backend;
+
+public static class BeGenericBackend
 {
-    public static class BeGenericBackend
-    {
-        private static readonly string getEntitiesCommand = @$"SELECT 
+    private static readonly string getEntitiesCommand = @$"SELECT 
 	EntityId as EntityKey, 
 	TableName,
 	ObjectName,
@@ -72,135 +72,139 @@ FOR JSON AUTO, INCLUDE_NULL_VALUES";
 FROM [SCHEMA].ColumnMetadata
 FOR JSON AUTO, INCLUDE_NULL_VALUES";
 
-        public static IMvcBuilder AddControllersWithBeGeneric<T>(this IServiceCollection services,
-            string connectionString,
-            BeConfiguration configuration,
-            Action<IAttachedActionService<T>> configureAttachedActionsAction = null,
-            string databaseSchema = "dbo")
+    public static IMvcBuilder AddControllersWithBeGeneric<T>(this IServiceCollection services,
+        string connectionString,
+        BeConfiguration configuration,
+        Action<IAttachedActionService<T>> configureAttachedActionsAction = null,
+        string databaseSchema = "dbo")
+    {
+        services.Configure<ApiBehaviorOptions>(options =>
         {
-            IDatabaseStructureService databaseStructureService = new MsSqlDatabaseStructureService(connectionString, databaseSchema, configuration.Metadata)
-            {
-                DataSchema = databaseSchema
-            };
+            options.DisableImplicitFromServicesParameters = true;
+        });
 
-            services.AddSingleton(databaseStructureService);
-            services.AddSingleton<IMemoryCacheService, MemoryCacheService>();
-            services.AddSingleton(configuration.Entities);
-            services.TryAddEnumerable(ServiceDescriptor.Transient<IApplicationModelProvider, ServiceControllerDynamicRouteProvider>());
+        IDatabaseStructureService databaseStructureService = new MsSqlDatabaseStructureService(connectionString, databaseSchema, configuration.Metadata)
+        {
+            DataSchema = databaseSchema
+        };
 
-            services.AddScoped<IDbConnection>((x) =>
+        services.AddSingleton(databaseStructureService);
+        services.AddSingleton<IMemoryCacheService, MemoryCacheService>();
+        services.AddSingleton(configuration.Entities);
+        services.TryAddEnumerable(ServiceDescriptor.Transient<IApplicationModelProvider, ServiceControllerDynamicRouteProvider>());
+
+        services.AddScoped<IDbConnection>((x) =>
+        {
+            var connection = new SqlConnection(connectionString);
+            connection.Open();
+            return connection;
+        });
+
+        services.AddScoped<IGenericDataService<T>, GenericDataService<T>>();
+
+        Dictionary<string, string> featureConfigutation = new()
+        {
+            { typeof(T).Name, "true" }
+        };
+
+        var configurationBuild = new ConfigurationBuilder()
+            .AddInMemoryCollection(featureConfigutation)
+            .Build();
+
+        var result = services.AddControllers()
+            .ConfigureApplicationPartManager(manager =>
             {
-                var connection = new SqlConnection(connectionString);
-                connection.Open();
-                return connection;
+                manager.FeatureProviders.Clear();
+                manager.FeatureProviders.Add(new GenericControllerFeatureProvider(configurationBuild));
+            })
+            .ConfigureApiBehaviorOptions(options =>
+            {
+                options.SuppressMapClientErrors = true;
             });
 
-            services.AddScoped<IGenericDataService<T>, GenericDataService<T>>();
-
-            Dictionary<string, string> featureConfigutation = new()
-            {
-                { typeof(T).Name, "true" }
-            };
-
-            var configurationBuild = new ConfigurationBuilder()
-                .AddInMemoryCollection(featureConfigutation)
-                .Build();
-
-            var result = services.AddControllers()
-                .ConfigureApplicationPartManager(manager =>
-                {
-                    manager.FeatureProviders.Clear();
-                    manager.FeatureProviders.Add(new GenericControllerFeatureProvider(configurationBuild));
-                })
-                .ConfigureApiBehaviorOptions(options =>
-                {
-                    options.SuppressMapClientErrors = true;
-                });
-
-            AttachedActionService<T> attachedActionService = new();
-            if (configureAttachedActionsAction != null)
-            {
-                configureAttachedActionsAction(attachedActionService);
-            }
-
-            services.AddSingleton<IAttachedActionService<T>>(attachedActionService);
-
-            return result;
+        AttachedActionService<T> attachedActionService = new();
+        if (configureAttachedActionsAction != null)
+        {
+            configureAttachedActionsAction(attachedActionService);
         }
 
-        public static IMvcBuilder AddControllersWithBeGenericSql<T>(this IServiceCollection services,
-            string connectionString,
-            string configDatabaseConnectionString,
-            Action<IAttachedActionService<T>> configureAttachedActionsAction = null,
-            string databaseSchema = "dbo",
-            string configSchema = "gba")
+        services.AddSingleton<IAttachedActionService<T>>(attachedActionService);
+
+        return result;
+    }
+
+    public static IMvcBuilder AddControllersWithBeGenericSql<T>(this IServiceCollection services,
+        string connectionString,
+        string configDatabaseConnectionString,
+        Action<IAttachedActionService<T>> configureAttachedActionsAction = null,
+        string databaseSchema = "dbo",
+        string configSchema = "gba")
+    {
+        return AddControllersWithBeGeneric(services, 
+            connectionString, 
+            new BeConfiguration() {
+                Entities = GetEntityDefinitions(configDatabaseConnectionString, configSchema),
+                Metadata = GetMetadataDefinitions(configDatabaseConnectionString, configSchema),
+            },
+            configureAttachedActionsAction,
+            databaseSchema);
+    }
+
+    public static IMvcBuilder AddControllersWithBeGeneric<T>(this IServiceCollection services,
+        string connectionString,
+        string configurationPath = "./be-generic.config.json",
+        Action<IAttachedActionService<T>> configureAttachedActionsAction = null,
+        string databaseSchema = "dbo")
+    {
+        using StreamReader metadataReader = new(configurationPath);
+        BeConfiguration configuration = JsonSerializer.Deserialize<BeConfiguration>(metadataReader.ReadToEnd(), new JsonSerializerOptions()
         {
-            return AddControllersWithBeGeneric(services, 
-                connectionString, 
-                new BeConfiguration() {
-                    Entities = GetEntityDefinitions(configDatabaseConnectionString, configSchema),
-                    Metadata = GetMetadataDefinitions(configDatabaseConnectionString, configSchema),
-                },
-                configureAttachedActionsAction,
-                databaseSchema);
+            PropertyNameCaseInsensitive = true
+        });
+
+        return AddControllersWithBeGeneric(services, connectionString, configuration, configureAttachedActionsAction, databaseSchema);
+    }
+
+    private static List<EntityDefinition> GetEntityDefinitions(string connectionString, string schema)
+    {
+        using SqlConnection conn = new(connectionString);
+        using SqlCommand sqlCommand = conn.CreateCommand();
+        sqlCommand.CommandType = CommandType.Text;
+        sqlCommand.CommandText = getEntitiesCommand.Replace("[SCHEMA]", schema);
+        conn.Open();
+        using var reader = sqlCommand.ExecuteReader();
+
+        if (reader.Read())
+        {
+            if (reader[0] == null)
+            {
+                return new List<EntityDefinition>();
+            }
+
+            return JsonSerializer.Deserialize<List<EntityDefinition>>(reader[0].ToString());
         }
-
-        public static IMvcBuilder AddControllersWithBeGeneric<T>(this IServiceCollection services,
-            string connectionString,
-            string configurationPath = "./be-generic.config.json",
-            Action<IAttachedActionService<T>> configureAttachedActionsAction = null,
-            string databaseSchema = "dbo")
+        else
         {
-            using StreamReader metadataReader = new(configurationPath);
-            BeConfiguration configuration = JsonSerializer.Deserialize<BeConfiguration>(metadataReader.ReadToEnd(), new JsonSerializerOptions()
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            return AddControllersWithBeGeneric(services, connectionString, configuration, configureAttachedActionsAction, databaseSchema);
+            throw new ArgumentException("Failed to get entities from provided connection string", nameof(connectionString));
         }
+    }
 
-        private static List<EntityDefinition> GetEntityDefinitions(string connectionString, string schema)
+    private static List<ColumnMetadataDefinition> GetMetadataDefinitions(string connectionString, string schema)
+    {
+        using SqlConnection conn = new(connectionString);
+        using SqlCommand sqlCommand = conn.CreateCommand();
+        sqlCommand.CommandType = CommandType.Text;
+        sqlCommand.CommandText = getMetadataCommand.Replace("[SCHEMA]", schema);
+        conn.Open();
+        using var reader = sqlCommand.ExecuteReader();
+
+        if (reader.Read() && reader[0] != null)
         {
-            using SqlConnection conn = new(connectionString);
-            using SqlCommand sqlCommand = conn.CreateCommand();
-            sqlCommand.CommandType = CommandType.Text;
-            sqlCommand.CommandText = getEntitiesCommand.Replace("[SCHEMA]", schema);
-            conn.Open();
-            using var reader = sqlCommand.ExecuteReader();
-
-            if (reader.Read())
-            {
-                if (reader[0] == null)
-                {
-                    return new List<EntityDefinition>();
-                }
-
-                return JsonSerializer.Deserialize<List<EntityDefinition>>(reader[0].ToString());
-            }
-            else
-            {
-                throw new ArgumentException("Failed to get entities from provided connection string", nameof(connectionString));
-            }
+            return JsonSerializer.Deserialize<List<ColumnMetadataDefinition>>(reader[0].ToString());
         }
-
-        private static List<ColumnMetadataDefinition> GetMetadataDefinitions(string connectionString, string schema)
+        else
         {
-            using SqlConnection conn = new(connectionString);
-            using SqlCommand sqlCommand = conn.CreateCommand();
-            sqlCommand.CommandType = CommandType.Text;
-            sqlCommand.CommandText = getMetadataCommand.Replace("[SCHEMA]", schema);
-            conn.Open();
-            using var reader = sqlCommand.ExecuteReader();
-
-            if (reader.Read() && reader[0] != null)
-            {
-                return JsonSerializer.Deserialize<List<ColumnMetadataDefinition>>(reader[0].ToString());
-            }
-            else
-            {
-                return new List<ColumnMetadataDefinition>();
-            }
+            return new List<ColumnMetadataDefinition>();
         }
     }
 }
