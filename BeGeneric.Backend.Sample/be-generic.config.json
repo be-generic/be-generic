@@ -1,139 +1,11 @@
 {
   "metadata": [
-    {
-      "TableName": "Department",
-      "ColumnName": "DepartmentName",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "nvarchar (2000)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Department",
-      "ColumnName": "Id",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "uniqueidentifier",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Employee",
-      "ColumnName": "Name",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "nvarchar (2000)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Employee",
-      "ColumnName": "Email",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "nvarchar (2000)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Employee",
-      "ColumnName": "DateHired",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "datetime2 (7)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Employee",
-      "ColumnName": "Salary",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "decimal (10, 2)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Employee",
-      "ColumnName": "Id",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "uniqueidentifier",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Payroll",
-      "ColumnName": "PeriodStart",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "datetime2 (7)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Payroll",
-      "ColumnName": "PeriodEnd",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "datetime2 (7)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Payroll",
-      "ColumnName": "TotalPay",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "decimal (10, 2)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Payroll",
-      "ColumnName": "Id",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "uniqueidentifier",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Position",
-      "ColumnName": "PositionName",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "nvarchar (2000)",
-      "IsRequired": true
-    },
-    {
-      "TableName": "Position",
-      "ColumnName": "Id",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "uniqueidentifier",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Timesheet",
-      "ColumnName": "Date",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "datetime2 (7)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Timesheet",
-      "ColumnName": "HoursWorked",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "int",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Timesheet",
-      "ColumnName": "Id",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "uniqueidentifier",
-      "IsRequired": null
-    }
   ],
   "entities": [
     {
       "entityKey": "d9a02040-6725-4ba7-a87e-c15164714c40",
-      "tableName": "Department",
-      "objectName": "Departments",
+      "tableName": "Departments",
+      "objectName": "Department",
       "controllerName": "department",
       "softDeleteColumn": null,
       "defaultValue": null,
@@ -151,7 +23,7 @@
         },
         {
           "propertyId": "00000000-0000-0000-0000-000000000000",
-          "propertyName": "Id",
+          "propertyName": "DepartmentID",
           "modelPropertyName": null,
           "isKey": true,
           "isReadOnly": true,
@@ -166,7 +38,7 @@
     },
     {
       "entityKey": "059fc058-1adb-4da9-951c-67394a6d253a",
-      "tableName": "Employee",
+      "tableName": "Employees",
       "objectName": "Employees",
       "controllerName": "employee",
       "softDeleteColumn": null,
@@ -174,7 +46,18 @@
       "properties": [
         {
           "propertyId": "23af6c71-888f-4fd0-810a-9e4a7ffc341e",
-          "propertyName": "Name",
+          "propertyName": "FirstName",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": null,
+          "referencingEntityKey": null,
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "59007fb7-7cad-4b6d-b34f-64df2275e7d8",
+          "propertyName": "LastName",
           "modelPropertyName": null,
           "isKey": false,
           "isReadOnly": false,
@@ -195,19 +78,8 @@
           "relatedModelPropertyName": null
         },
         {
-          "propertyId": "59007fb7-7cad-4b6d-b34f-64df2275e7d8",
-          "propertyName": "Position",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": "64450c1e-9160-4598-aed1-c842a7550ea6",
-          "relatedModelPropertyName": null
-        },
-        {
           "propertyId": "9a157cf3-88fa-4b77-8d25-337e3964d5db",
-          "propertyName": "DateHired",
+          "propertyName": "HireDate",
           "modelPropertyName": null,
           "isKey": false,
           "isReadOnly": false,
@@ -229,120 +101,8 @@
         },
         {
           "propertyId": "25cc09fd-15ad-4a3d-102b-43a0b08574b9",
-          "propertyName": "User",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": "3C78639B-8991-440E-B80A-CA327D9F2825",
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "00000000-0000-0000-0000-000000000000",
-          "propertyName": "Id",
-          "modelPropertyName": null,
-          "isKey": true,
-          "isReadOnly": true,
-          "isRequired": null,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        }
-      ],
-      "entityRoles": null,
-      "entityRelations": []
-    },
-    {
-      "entityKey": "37937464-3bcd-4a78-a5fc-f44a848f0155",
-      "tableName": "Payroll",
-      "objectName": "Payrolls",
-      "controllerName": "payroll",
-      "softDeleteColumn": null,
-      "defaultValue": null,
-      "properties": [
-        {
-          "propertyId": "5dfd0cb1-7146-4a2f-8f01-43501d9e5b24",
-          "propertyName": "Employee",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": "059fc058-1adb-4da9-951c-67394a6d253a",
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "1cfec004-e882-48fc-8f1e-ed6b886c3a82",
-          "propertyName": "PeriodStart",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "03089a80-f38f-4801-8a7f-057661c8b559",
-          "propertyName": "PeriodEnd",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "0f0a46b7-5a3a-4dad-83a0-1e5f8dcdafc8",
-          "propertyName": "TotalPay",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "00000000-0000-0000-0000-000000000000",
-          "propertyName": "Id",
-          "modelPropertyName": null,
-          "isKey": true,
-          "isReadOnly": true,
-          "isRequired": null,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        }
-      ],
-      "entityRoles": null,
-      "entityRelations": []
-    },
-    {
-      "entityKey": "64450c1e-9160-4598-aed1-c842a7550ea6",
-      "tableName": "Position",
-      "objectName": "Positions",
-      "controllerName": "position",
-      "softDeleteColumn": null,
-      "defaultValue": null,
-      "properties": [
-        {
-          "propertyId": "0f61cef8-0893-4a44-a9d2-b1a64c5dc1cd",
-          "propertyName": "PositionName",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": true,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "317fbebe-10a6-44fd-b54d-764fba6eaf6d",
-          "propertyName": "Department",
-          "modelPropertyName": null,
+          "propertyName": "DepartmentID",
+          "modelPropertyName": "Department",
           "isKey": false,
           "isReadOnly": false,
           "isRequired": false,
@@ -351,8 +111,8 @@
           "relatedModelPropertyName": null
         },
         {
-          "propertyId": "00000000-0000-0000-0000-000000000000",
-          "propertyName": "Id",
+          "propertyId": "00000000-0000-0000-0000-000000000001",
+          "propertyName": "EmployeeID",
           "modelPropertyName": null,
           "isKey": true,
           "isReadOnly": true,
@@ -364,144 +124,6 @@
       ],
       "entityRoles": null,
       "entityRelations": []
-    },
-    {
-      "entityKey": "8394f4c8-2df4-42b7-9a22-e1960b479ac1",
-      "tableName": "Timesheet",
-      "objectName": "Timesheets",
-      "controllerName": "timesheet",
-      "softDeleteColumn": null,
-      "defaultValue": null,
-      "properties": [
-        {
-          "propertyId": "ffa9b401-1866-49ae-8495-f2dfae0e6cbf",
-          "propertyName": "Employee",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": "059fc058-1adb-4da9-951c-67394a6d253a",
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "adbf71e3-23a9-4e13-ab79-917ff62cf5a6",
-          "propertyName": "Date",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "595e900c-934d-49f4-b0d5-ad1d50fb9fe3",
-          "propertyName": "HoursWorked",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "00000000-0000-0000-0000-000000000000",
-          "propertyName": "Id",
-          "modelPropertyName": null,
-          "isKey": true,
-          "isReadOnly": true,
-          "isRequired": null,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        }
-      ],
-      "entityRoles": null,
-      "entityRelations": []
-    },
-    {
-      "entityKey": "D388B2CD-DED7-45D8-9423-F4416811B14B",
-      "tableName": "_BeGen_Role",
-      "objectName": null,
-      "controllerName": null,
-      "softDeleteColumn": null,
-      "defaultValue": null,
-      "properties": [
-        {
-          "propertyId": null,
-          "propertyName": "Id",
-          "modelPropertyName": null,
-          "isKey": true,
-          "isReadOnly": true,
-          "isRequired": null,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": null,
-          "propertyName": "RoleName",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": null,
-          "isRequired": null,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        }
-      ],
-      "entityRoles": null,
-      "entityRelations": null
-    },
-    {
-      "entityKey": "3C78639B-8991-440E-B80A-CA327D9F2825",
-      "tableName": "_BeGen_User",
-      "objectName": null,
-      "controllerName": null,
-      "softDeleteColumn": null,
-      "defaultValue": null,
-      "properties": [
-        {
-          "propertyId": null,
-          "propertyName": "Id",
-          "modelPropertyName": null,
-          "isKey": true,
-          "isReadOnly": true,
-          "isRequired": null,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": null,
-          "propertyName": "Name",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": null,
-          "isRequired": null,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        }
-      ],
-      "entityRoles": null,
-      "entityRelations": [
-        {
-          "crossTableName": "_BeGen_CROSS_User_Role",
-          "entityReferencingColumnName": "UserId",
-          "entityPropertyName": "Roles",
-          "relatedEntityReferencingColumnName": "RoleId",
-          "relatedEntityPropertyName": "Users",
-          "validFromColumnName": null,
-          "validToColumnName": null,
-          "activeColumnName": null,
-          "showInEntity": true,
-          "showInRelatedEntity": false,
-          "relatedEntityKey": "D388B2CD-DED7-45D8-9423-F4416811B14B"
-        }
-      ]
     }
   ],
   "integrations": null

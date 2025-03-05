@@ -1,3 +1,0 @@
-﻿CREATE SCHEMA [gba]
-    AUTHORIZATION [dbo];
-

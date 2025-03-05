@@ -56,24 +56,11 @@
   <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
   <ItemGroup>
     <Folder Include="Properties" />
-    <Folder Include="dbo\" />
-    <Folder Include="dbo\Tables\" />
-    <Folder Include="gba\" />
-    <Folder Include="gba\Tables\" />
     <Folder Include="Security\" />
     <Folder Include="hr\" />
     <Folder Include="hr\Tables\" />
   </ItemGroup>
   <ItemGroup>
-    <Build Include="dbo\Tables\Roles.sql" />
-    <Build Include="gba\Tables\Properties.sql" />
-    <Build Include="gba\Tables\EntityRole.sql" />
-    <Build Include="gba\Tables\EntityRelation.sql" />
-    <Build Include="gba\Tables\Entities.sql" />
-    <Build Include="gba\Tables\ColumnMetadata.sql" />
-    <Build Include="gba\Tables\EndpointProperty.sql" />
-    <Build Include="gba\Tables\Endpoint.sql" />
-    <Build Include="Security\gba.sql" />
     <Build Include="hr\Tables\SalaryHistories.sql" />
     <Build Include="hr\Tables\EmployeeSkills.sql" />
     <Build Include="hr\Tables\Skills.sql" />
@@ -84,8 +71,5 @@
     <Build Include="hr\Tables\Departments.sql" />
     <Build Include="hr\Tables\Employees.sql" />
     <Build Include="Security\hr.sql" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="FillSampleData.sql" />
   </ItemGroup>
 </Project>

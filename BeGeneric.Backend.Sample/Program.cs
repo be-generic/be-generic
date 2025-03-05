@@ -12,7 +12,7 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddControllersWithBeGeneric<Guid>(
     builder.Configuration.GetConnectionString("connectionString"),
-    databaseSchema: "project_84"
+    databaseSchema: "hr"
 );
 
 var app = builder.Build();
