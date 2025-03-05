@@ -1,21 +1,20 @@
-﻿namespace BeGeneric.Backend.Services.BeGeneric.Exceptions
+﻿namespace BeGeneric.Backend.Services.GenericBackend.Exceptions;
+
+public class GenericBackendSecurityException : Exception
 {
-    public class GenericBackendSecurityException : Exception
+    public GenericBackendSecurityException(SecurityStatus securityStatus)
+        : base()
     {
-        public GenericBackendSecurityException(SecurityStatus securityStatus)
-            : base()
-        {
-            this.SecurityStatus = securityStatus;
-        }
-
-        public GenericBackendSecurityException(SecurityStatus securityStatus, object errorObject)
-            : base()
-        {
-            this.SecurityStatus = securityStatus;
-            this.ErrorObject = errorObject;
-        }
-
-        public SecurityStatus SecurityStatus { get; set; }
-        public object ErrorObject { get; set; }
+        SecurityStatus = securityStatus;
     }
+
+    public GenericBackendSecurityException(SecurityStatus securityStatus, object errorObject)
+        : base()
+    {
+        SecurityStatus = securityStatus;
+        ErrorObject = errorObject;
+    }
+
+    public SecurityStatus SecurityStatus { get; set; }
+    public object ErrorObject { get; set; }
 }

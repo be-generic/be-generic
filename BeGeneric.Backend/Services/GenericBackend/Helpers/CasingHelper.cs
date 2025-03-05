@@ -1,87 +1,86 @@
-﻿using BeGeneric.Backend.Models;
+﻿using BeGeneric.Backend.GenericModels;
 
-namespace BeGeneric.Helpers
+namespace BeGeneric.Backend.Services.GenericBackend.Helpers;
+
+internal static class CasingHelper
 {
-    internal static class CasingHelper
+    internal static string CamelCaseName(this Property property)
     {
-        internal static string CamelCaseName(this Property property)
+        if (property == null)
         {
-            if (property == null)
-            {
-                return null;
-            }
-
-            return (property.ModelPropertyName ?? property.PropertyName)[0].ToString().ToLowerInvariant() + (property.ModelPropertyName ?? property.PropertyName)[1..];
+            return null;
         }
 
-        internal static string CamelCaseName(this Entity entity)
-        {
-            if (entity == null)
-            {
-                return null;
-            }
+        return (property.ModelPropertyName ?? property.PropertyName)[0].ToString().ToLowerInvariant() + (property.ModelPropertyName ?? property.PropertyName)[1..];
+    }
 
-            return (entity.ObjectName ?? entity.TableName)[0].ToString().ToLowerInvariant() + (entity.ObjectName ?? entity.TableName)[1..];
+    internal static string CamelCaseName(this Entity entity)
+    {
+        if (entity == null)
+        {
+            return null;
         }
 
-        internal static string TitleCaseName(this Property property)
-        {
-            if (property == null)
-            {
-                return null;
-            }
+        return (entity.ObjectName ?? entity.TableName)[0].ToString().ToLowerInvariant() + (entity.ObjectName ?? entity.TableName)[1..];
+    }
 
-            return (property.ModelPropertyName ?? property.PropertyName)[0].ToString().ToUpperInvariant() + (property.ModelPropertyName ?? property.PropertyName)[1..];
+    internal static string TitleCaseName(this Property property)
+    {
+        if (property == null)
+        {
+            return null;
         }
 
-        internal static string TitleCaseName(this Entity entity)
-        {
-            if (entity == null)
-            {
-                return null;
-            }
+        return (property.ModelPropertyName ?? property.PropertyName)[0].ToString().ToUpperInvariant() + (property.ModelPropertyName ?? property.PropertyName)[1..];
+    }
 
-            return (entity.ObjectName ?? entity.TableName)[0].ToString().ToUpperInvariant() + (entity.ObjectName ?? entity.TableName)[1..];
+    internal static string TitleCaseName(this Entity entity)
+    {
+        if (entity == null)
+        {
+            return null;
         }
 
-        internal static string TitleCaseOriginalName(this Property property)
-        {
-            if (property == null)
-            {
-                return null;
-            }
+        return (entity.ObjectName ?? entity.TableName)[0].ToString().ToUpperInvariant() + (entity.ObjectName ?? entity.TableName)[1..];
+    }
 
-            return property.PropertyName[0].ToString().ToUpperInvariant() + property.PropertyName[1..];
+    internal static string TitleCaseOriginalName(this Property property)
+    {
+        if (property == null)
+        {
+            return null;
         }
 
-        internal static string TitleCaseOriginalName(this Entity entity)
-        {
-            if (entity == null)
-            {
-                return null;
-            }
+        return property.PropertyName[0].ToString().ToUpperInvariant() + property.PropertyName[1..];
+    }
 
-            return entity.TableName[0].ToString().ToUpperInvariant() + entity.TableName[1..];
+    internal static string TitleCaseOriginalName(this Entity entity)
+    {
+        if (entity == null)
+        {
+            return null;
         }
 
-        internal static string TitleCaseOriginalName(this string name)
-        {
-            if (name == null)
-            {
-                return null;
-            }
+        return entity.TableName[0].ToString().ToUpperInvariant() + entity.TableName[1..];
+    }
 
-            return name[0].ToString().ToUpperInvariant() + name[1..];
+    internal static string TitleCaseOriginalName(this string name)
+    {
+        if (name == null)
+        {
+            return null;
         }
 
-        internal static string CamelCaseName(this string name)
-        {
-            if (name == null)
-            {
-                return null;
-            }
+        return name[0].ToString().ToUpperInvariant() + name[1..];
+    }
 
-            return name[0].ToString().ToLowerInvariant() + name[1..];
+    internal static string CamelCaseName(this string name)
+    {
+        if (name == null)
+        {
+            return null;
         }
+
+        return name[0].ToString().ToLowerInvariant() + name[1..];
     }
 }

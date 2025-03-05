@@ -1,9 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿namespace BeGeneric.Backend.GenericModels;
 
-namespace BeGeneric.Backend.Models
+public class Role
 {
-    public class Role
-    {
-        public string RoleName { get; set; }
-    }
+    public string RoleName { get; set; }
 }

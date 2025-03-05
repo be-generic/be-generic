@@ -1,16 +1,15 @@
-﻿namespace BeGeneric.Backend.Settings
+﻿namespace BeGeneric.Backend.Settings;
+
+public class EntityRoleDefinition
 {
-    public class EntityRoleDefinition
-    {
-        public bool GetOne { get; set; } = false;
-        public bool GetAll { get; set; } = false;
-        public bool Post { get; set; } = false;
-        public bool Put { get; set; } = false;
-        public bool Delete { get; set; } = false;
+    public bool GetOne { get; set; } = false;
+    public bool GetAll { get; set; } = false;
+    public bool Post { get; set; } = false;
+    public bool Put { get; set; } = false;
+    public bool Delete { get; set; } = false;
 
-        public string? ViewFilter { get; set; }
-        public string? EditFilter { get; set; }
+    public string? ViewFilter { get; set; }
+    public string? EditFilter { get; set; }
 
-        public string RoleKey { get; set; } = string.Empty;
-    }
+    public string RoleKey { get; set; } = string.Empty;
 }
