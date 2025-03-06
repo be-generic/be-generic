@@ -258,7 +258,7 @@ public class DummyParameterInfo : ParameterInfo
 
     public override object[] GetCustomAttributes(Type attributeType, bool inherit)
     {
-        return [new BindPropertyAttribute()];
+        return new Attribute[0];
     }
 
     public override object[] GetCustomAttributes(bool inherit)
