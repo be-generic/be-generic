@@ -36,22 +36,22 @@ namespace BeGeneric.Backend.Services.BeGeneric
             {
                 operation = operation.Replace("$filterParam", $@"@Filter_Int{counter}");
 
-                    if (Filter is JsonElement jsonFilter)
-                    {
-                        Filter = jsonFilter.ToString();
-                    }
+                if (Filter is JsonElement jsonFilter)
+                {
+                    Filter = jsonFilter.ToString();
+                }
 
-                    if (Filter is string strFilter && string.Equals(strFilter, "$user", StringComparison.OrdinalIgnoreCase))
+                if (Filter is string strFilter && string.Equals(strFilter, "$user", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!string.IsNullOrEmpty(userName))
                     {
-                        if (!string.IsNullOrEmpty(userName))
-                        {
-                            Filter = userName;
-                        }
-                        else
-                        {
-                            Filter = DBNull.Value;
-                        }
+                        Filter = userName;
                     }
+                    else
+                    {
+                        Filter = DBNull.Value;
+                    }
+                }
 
                 parameters.Add(new Tuple<string, object>($@"Filter_Int{counter++}", Filter));
             }
@@ -80,7 +80,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 }
 
                 bool isFirstInBatch = true;
-                sb.Append("(");
+                sb.Append('(');
 
                 foreach (var comparer in comparers)
                 {
@@ -94,18 +94,18 @@ namespace BeGeneric.Backend.Services.BeGeneric
                         isFirstInBatch = false;
                     }
 
-                sb.Append($@"{propertyName} LIKE @Filter_Int{counter}_{parameters.Count} ");
-                parameters.Add(new Tuple<string, object>($@"Filter_Int{counter++}_{parameters.Count}", "%" + word.Trim() + "%"));
+                    sb.Append($@"{propertyName} LIKE @Filter_Int{counter}_{parameters.Count} ");
+                    parameters.Add(new Tuple<string, object>($@"Filter_Int{counter++}_{parameters.Count}", "%" + word.Trim() + "%"));
+                }
+
+                sb.Append(')');
             }
 
-                sb.Append(")");
-            }
-
-            sb.Append(")");
+            sb.Append(')');
             operation = sb.ToString();
 
-        return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter, parameters);
-    }
+            return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter, parameters);
+        }
 
         private string ResolvePropertyName(Entity entity, string dbSchema, string originTableAlias, string includedFilter = null, Dictionary<string, SelectPropertyData> joinData = null)
         {
@@ -203,14 +203,14 @@ namespace BeGeneric.Backend.Services.BeGeneric
                         continue;
                     }
 
-                if (i > 0)
-                {
-                    sb.Append(" INNER JOIN ");
-                }
-                else
-                {
-                    firstKey = entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
-                }
+                    if (i > 0)
+                    {
+                        sb.Append(" INNER JOIN ");
+                    }
+                    else
+                    {
+                        firstKey = entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
+                    }
 
                     if (!referencingProperty && property.ReferencingEntity != null)
                     {
