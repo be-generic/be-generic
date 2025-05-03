@@ -32,32 +32,32 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 operation = operation.Replace("$property", ResolvePropertyName(entity, dbSchema, originTableAlias));
             }
 
-        if (operation.Contains("$filterParam"))
-        {
-            operation = operation.Replace("$filterParam", $@"@Filter_Int{counter}");
+            if (operation.Contains("$filterParam"))
+            {
+                operation = operation.Replace("$filterParam", $@"@Filter_Int{counter}");
 
-                if (Filter is JsonElement jsonFilter)
-                {
-                    Filter = jsonFilter.ToString();
-                }
-
-                if (Filter is string strFilter && string.Equals(strFilter, "$user", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (!string.IsNullOrEmpty(userName))
+                    if (Filter is JsonElement jsonFilter)
                     {
-                        Filter = userName;
+                        Filter = jsonFilter.ToString();
                     }
-                    else
-                    {
-                        Filter = DBNull.Value;
-                    }
-                }
 
-            parameters.Add(new Tuple<string, object>($@"Filter_Int{counter++}", Filter));
+                    if (Filter is string strFilter && string.Equals(strFilter, "$user", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!string.IsNullOrEmpty(userName))
+                        {
+                            Filter = userName;
+                        }
+                        else
+                        {
+                            Filter = DBNull.Value;
+                        }
+                    }
+
+                parameters.Add(new Tuple<string, object>($@"Filter_Int{counter++}", Filter));
+            }
+
+            return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter, parameters);
         }
-
-        return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter, parameters);
-    }
 
         public static Tuple<string, int, List<Tuple<string, object>>> ToGroupSQLQuery(List<ComparerObject> comparers, Entity entity, string dbSchema, int counter, string originTableAlias)
         {
