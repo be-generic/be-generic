@@ -32,9 +32,9 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 operation = operation.Replace("$property", ResolvePropertyName(entity, dbSchema, originTableAlias));
             }
 
-            if (operation.Contains("$filterParam"))
-            {
-                operation = operation.Replace("$filterParam", $@"@Filter{counter}");
+        if (operation.Contains("$filterParam"))
+        {
+            operation = operation.Replace("$filterParam", $@"@Filter_Int{counter}");
 
                 if (Filter is JsonElement jsonFilter)
                 {
@@ -53,11 +53,11 @@ namespace BeGeneric.Backend.Services.BeGeneric
                     }
                 }
 
-                parameters.Add(new Tuple<string, object>($@"Filter{counter}", Filter));
-            }
-
-            return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter + 1, parameters);
+            parameters.Add(new Tuple<string, object>($@"Filter_Int{counter++}", Filter));
         }
+
+        return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter, parameters);
+    }
 
         public static Tuple<string, int, List<Tuple<string, object>>> ToGroupSQLQuery(List<ComparerObject> comparers, Entity entity, string dbSchema, int counter, string originTableAlias)
         {
@@ -94,9 +94,9 @@ namespace BeGeneric.Backend.Services.BeGeneric
                         isFirstInBatch = false;
                     }
 
-                    sb.Append($@"{propertyName} LIKE @Filter{counter}_{internal_counter} ");
-                    parameters.Add(new Tuple<string, object>($@"Filter{counter}_{internal_counter++}", "%" + word.Trim() + "%"));
-                }
+                sb.Append($@"{propertyName} LIKE @Filter_Int{counter}_{parameters.Count} ");
+                parameters.Add(new Tuple<string, object>($@"Filter_Int{counter++}_{parameters.Count}", "%" + word.Trim() + "%"));
+            }
 
                 sb.Append(")");
             }
@@ -104,8 +104,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
             sb.Append(")");
             operation = sb.ToString();
 
-            return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter + 1, parameters);
-        }
+        return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter, parameters);
+    }
 
         private string ResolvePropertyName(Entity entity, string dbSchema, string originTableAlias, string includedFilter = null, Dictionary<string, SelectPropertyData> joinData = null)
         {
@@ -203,14 +203,14 @@ namespace BeGeneric.Backend.Services.BeGeneric
                         continue;
                     }
 
-                    if (i > 0)
-                    {
-                        sb.Append(" INNER JOIN ");
-                    }
-                    else
-                    {
-                        firstKey = property.PropertyName;
-                    }
+                if (i > 0)
+                {
+                    sb.Append(" INNER JOIN ");
+                }
+                else
+                {
+                    firstKey = entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id";
+                }
 
                     if (!referencingProperty && property.ReferencingEntity != null)
                     {

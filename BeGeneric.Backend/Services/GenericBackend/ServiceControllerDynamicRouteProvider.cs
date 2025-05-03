@@ -259,11 +259,6 @@ public class SimplePropertyInfo : PropertyInfo
             throw new ArgumentNullException(null, nameof(propertyType));
         }
 
-        if (string.IsNullOrEmpty(name))
-        {
-            throw new ArgumentException(null, nameof(name));
-        }
-
         this.name = name;
         this.propertyType = propertyType;
     }
@@ -294,7 +289,10 @@ public class SimplePropertyInfo : PropertyInfo
 
     public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, System.Globalization.CultureInfo culture) => throw new NotImplementedException();
 
-    public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotImplementedException();
+    public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+    {
+        return new Attribute[0];
+    }
 
     public override object[] GetCustomAttributes(bool inherit) => throw new NotImplementedException();
 

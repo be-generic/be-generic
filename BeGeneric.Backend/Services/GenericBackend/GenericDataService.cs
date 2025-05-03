@@ -1451,7 +1451,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 {
                     queryBuilder.Append(" AND (");
                     queryBuilder.Append(filters.Item1);
-                    queryBuilder.Append(")");
+                    queryBuilder.Append(')');
 
                     parameters.AddRange(filters.Item3.Select(x => new SqlParameter(x.Item1, x.Item2)).ToArray());
                 }
