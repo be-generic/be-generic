@@ -12,7 +12,7 @@
 	  <RepositoryUrl>https://github.com/be-generic/be-generic</RepositoryUrl>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageReleaseNotes>
-      Security update of System.Data.SqlClient nuget.
+      Reliability improvement of filtering.
     </PackageReleaseNotes>
   </PropertyGroup>
 
