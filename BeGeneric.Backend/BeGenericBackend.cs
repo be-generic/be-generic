@@ -1,12 +1,10 @@
-﻿using BeGeneric.Backend.Services.BeGeneric;
-using BeGeneric.Backend.Services.BeGeneric.DatabaseStructure;
-using BeGeneric.Backend.Services.Common;
+﻿using BeGeneric.Backend.Services.Common;
+using BeGeneric.Backend.Services.GenericBackend;
 using BeGeneric.Backend.Settings;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.FeatureManagement;
 using System.Data;
 using System.Data.SqlClient;
 using System.Text.Json;

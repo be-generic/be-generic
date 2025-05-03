@@ -1,6 +1,4 @@
-﻿using BeGeneric.Backend.Models;
-
-namespace BeGeneric.Helpers
+﻿namespace BeGeneric.Backend.Services.GenericBackend.Helpers
 {
     internal static class CasingHelper
     {

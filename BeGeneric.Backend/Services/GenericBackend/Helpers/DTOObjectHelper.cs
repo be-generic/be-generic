@@ -1,8 +1,6 @@
 ﻿using BeGeneric.Backend.Settings;
 using System.Reflection.Emit;
 using System.Reflection;
-using BeGeneric.Helpers;
-using BeGeneric.Backend.Services.BeGeneric.DatabaseStructure;
 
 namespace BeGeneric.Backend.Services.GenericBackend.Helpers
 {

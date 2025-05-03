@@ -1,6 +1,5 @@
-﻿using BeGeneric.Backend.Services.BeGeneric;
-using BeGeneric.Backend.Services.BeGeneric.Exceptions;
-using Microsoft.AspNetCore.Authorization;
+﻿using BeGeneric.Backend.Services.GenericBackend;
+using BeGeneric.Backend.Services.GenericBackend.Exceptions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
