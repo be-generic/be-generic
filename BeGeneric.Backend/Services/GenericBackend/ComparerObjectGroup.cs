@@ -23,21 +23,29 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
         public virtual Tuple<string, int, List<Tuple<string, object>>> ToSQLQuery(string userName, Entity entity, string dbSchema, int counter, string originTableAlias, Dictionary<string, SelectPropertyData> joinData)
         {
+            if (Comparisons == null || Comparisons.Length == 0)
+            {
+                return new Tuple<string, int, List<Tuple<string, object>>>(string.Empty, counter, new List<Tuple<string, object>>());
+            }
+
             bool isOr = !string.IsNullOrEmpty(Conjunction) && string.Equals(Conjunction, "or", StringComparison.OrdinalIgnoreCase);
             bool isNot = !string.IsNullOrEmpty(Conjunction) && string.Equals(Conjunction, "not", StringComparison.OrdinalIgnoreCase);
 
             List<Tuple<string, int, List<Tuple<string, object>>>> comps = new();
+            int internalCounter = counter;
             foreach (var ci in Comparisons.Where(x => !string.Equals(x.Operator, "contains-any", StringComparison.OrdinalIgnoreCase)))
             {
-                var tmp1 = ci.ToSQLQuery(userName, entity, dbSchema, counter + 1, originTableAlias, joinData);
-                counter = tmp1.Item2;
+                var tmp1 = ci.ToSQLQuery(userName, entity, dbSchema, internalCounter, originTableAlias, joinData);
+                internalCounter = tmp1.Item2;
                 comps.Add(tmp1);
             }
 
             var comparers = Comparisons.Where(x => string.Equals(x.Operator, "contains-any", StringComparison.OrdinalIgnoreCase)).ToList();
             if (comparers.Count > 0)
             {
-                comps.Add(ComparerObject.ToGroupSQLQuery(comparers, entity, dbSchema, ++counter, originTableAlias));
+                var tmp1 = ComparerObject.ToGroupSQLQuery(comparers, entity, dbSchema, internalCounter, originTableAlias);
+                internalCounter = tmp1.Item2;
+                comps.Add(tmp1);
             }
 
             return new Tuple<string, int, List<Tuple<string, object>>>(
@@ -45,7 +53,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 "(" + string.Join(
                 !isOr ? " AND " : " OR ",
                 comps.Select(x => x.Item1)) + ")",
-                counter + 1,
+                internalCounter,
                 comps.SelectMany(x => x.Item3).ToList());
         }
     }
