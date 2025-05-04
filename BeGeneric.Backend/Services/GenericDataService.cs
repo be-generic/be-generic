@@ -74,10 +74,10 @@ public class GenericDataService<T> : IGenericDataService<T>
         }
 
         int tabCounter = 0;
-        List<SqlParameter> sqlParameters = new();
+        List<DbParameter> dbParameters = new();
         List<Guid> entityIds = new();
 
-        string query = GenerateSelectQuery(entity, entityIds, ref tabCounter, roleName, userName, sqlParameters, null, id);
+        string query = GenerateSelectQuery(entity, entityIds, ref tabCounter, roleName, userName, dbParameters, null, id);
 
         List<Tuple<string, object>> permissionsFilterParams = new();
 
@@ -88,7 +88,7 @@ public class GenericDataService<T> : IGenericDataService<T>
             filterObjectWithPermissions = JsonSerializer.Deserialize<ComparerObject>(permissionsFilter, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
         }
 
-        var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, sqlParameters.Count, "tab1", null);
+        var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, dbParameters.Count, "tab1", null);
 
         if (filters != null && filters.Item1 != null && filters.Item1.Replace("(", "").Replace(")", "").Length > 0)
         {
@@ -97,16 +97,16 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         query += $" FOR JSON AUTO, INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER";
 
-        SqlConnection connection = this.connection as SqlConnection;
+        DbConnection connection = this.connection as DbConnection;
 
-        using DbCommand command = new SqlCommand(query, connection);
-        command.Parameters.Add(new SqlParameter("tab1_val", id));
+        using DbCommand command = dbStructure.GetDbCommand(query, connection);
+        command.Parameters.Add(dbStructure.GetDbParameter("tab1_val", id));
 
-        command.Parameters.AddRange(sqlParameters.ToArray());
+        command.Parameters.AddRange(dbParameters.ToArray());
 
         if (filters != null)
         {
-            command.Parameters.AddRange(filters.Item3.Select(x => new SqlParameter(x.Item1, x.Item2)).ToArray());
+            command.Parameters.AddRange(filters.Item3.Select(x => dbStructure.GetDbParameter(x.Item1, x.Item2)).ToArray());
         }
 
         if (connection.State != ConnectionState.Open)
@@ -200,7 +200,7 @@ public class GenericDataService<T> : IGenericDataService<T>
             }
         }
 
-        List<SqlParameter> parameters = new();
+        List<DbParameter> parameters = new();
 
         string query = string.Empty;
         if (!string.IsNullOrEmpty(sortProperty) && sortProperty.Contains('.'))
@@ -233,7 +233,7 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         query += " FOR JSON AUTO";
 
-        SqlConnection connection = this.connection as SqlConnection;
+        DbConnection connection = this.connection as DbConnection;
 
         totalCount = (await AggregateEntityAccess(user, entity, null, filterObject: permissionFilterObject))[0];
 
@@ -244,13 +244,13 @@ public class GenericDataService<T> : IGenericDataService<T>
             filteredTotalCount = (await AggregateEntityAccess(user, entity, null, filterObjectWithPermissions))[0];
         }
 
-        using (SqlCommand command = new(query, connection))
+        using (DbCommand command = dbStructure.GetDbCommand(query, connection))
         {
             command.Parameters.AddRange(parameters.ToArray());
 
             if (filters != null)
             {
-                command.Parameters.AddRange(filters.Item3.Select(x => new SqlParameter(x.Item1, x.Item2)).ToArray());
+                command.Parameters.AddRange(filters.Item3.Select(x => dbStructure.GetDbParameter(x.Item1, x.Item2)).ToArray());
             }
 
             if (connection.State != ConnectionState.Open)
@@ -357,13 +357,13 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         query += " FOR JSON PATH";
 
-        SqlConnection connection = this.connection as SqlConnection;
+        DbConnection connection = this.connection as DbConnection;
 
-        using (SqlCommand command = new(query, connection))
+        using (DbCommand command = dbStructure.GetDbCommand(query, connection))
         {
             if (filters != null)
             {
-                command.Parameters.AddRange(filters.Item3.Select(x => new SqlParameter(x.Item1, x.Item2)).ToArray());
+                command.Parameters.AddRange(filters.Item3.Select(x => dbStructure.GetDbParameter(x.Item1, x.Item2)).ToArray());
             }
 
             if (connection.State != ConnectionState.Open)
@@ -436,9 +436,9 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         queryBuilder.AppendLine(@"SELECT * FROM @generated_keys");
 
-        SqlConnection connection = this.connection as SqlConnection;
+        DbConnection connection = this.connection as DbConnection;
 
-        using DbCommand command = new SqlCommand(queryBuilder.ToString(), connection);
+        using DbCommand command = dbStructure.GetDbCommand(queryBuilder.ToString(), connection);
         int i = 0;
         List<Tuple<string, string>> errors = new();
 
@@ -482,7 +482,7 @@ public class GenericDataService<T> : IGenericDataService<T>
                         actualValue = value1.ToString();
                     }
 
-                    command.Parameters.Add(new SqlParameter("PropertyValue" + i.ToString(), actualValue ?? DBNull.Value));
+                    command.Parameters.Add(dbStructure.GetDbParameter("PropertyValue" + i.ToString(), actualValue ?? DBNull.Value));
 
                     i++;
                 }
@@ -491,7 +491,7 @@ public class GenericDataService<T> : IGenericDataService<T>
             {
                 if (string.Equals(prop.DefaultValue, "$user", StringComparison.OrdinalIgnoreCase))
                 {
-                    command.Parameters.Add(new SqlParameter("PropertyValue" + i.ToString(), string.IsNullOrEmpty(userId) ? DBNull.Value : userId));
+                    command.Parameters.Add(dbStructure.GetDbParameter<object>("PropertyValue" + i.ToString(), string.IsNullOrEmpty(userId) ? DBNull.Value : userId));
                     i++;
                 }
                 else
@@ -542,7 +542,7 @@ public class GenericDataService<T> : IGenericDataService<T>
                 string crossTableQuery = qb2.ToString();
                 if (!string.IsNullOrEmpty(crossTableQuery))
                 {
-                    using DbCommand crossTableCommand = new SqlCommand(crossTableQuery, connection);
+                    using DbCommand crossTableCommand = dbStructure.GetDbCommand(crossTableQuery, connection);
                     crossTableCommand.Transaction = transaction;
                     await crossTableCommand.ExecuteNonQueryAsync();
                 }
@@ -630,11 +630,11 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         queryBuilder.Append($"'{id}', '{relatedEntity.Id}')");
 
-        SqlConnection connection = this.connection as SqlConnection;
+        DbConnection connection = this.connection as DbConnection;
 
         try
         {
-            using DbCommand command = new SqlCommand(queryBuilder.ToString(), connection);
+            using DbCommand command = dbStructure.GetDbCommand(queryBuilder.ToString(), connection);
             if (connection.State != ConnectionState.Open)
             {
                 connection.Open();
@@ -716,7 +716,7 @@ public class GenericDataService<T> : IGenericDataService<T>
                     errors.Add(new(error, prop.ModelPropertyName ?? prop.PropertyName));
                 }
 
-                parameters.Add(new SqlParameter("PropertyValue" + i.ToString(), actualValue ?? DBNull.Value));
+                parameters.Add(dbStructure.GetDbParameter("PropertyValue" + i.ToString(), actualValue ?? DBNull.Value));
 
                 i++;
             }
@@ -749,23 +749,23 @@ public class GenericDataService<T> : IGenericDataService<T>
             queryBuilder.Append($" AND {filters.Item1}");
         }
 
-        SqlConnection connection = this.connection as SqlConnection;
+        DbConnection connection = this.connection as DbConnection;
         T id1;
-        using DbCommand command = new SqlCommand(queryBuilder.ToString(), connection);
+        using DbCommand command = dbStructure.GetDbCommand(queryBuilder.ToString(), connection);
         if (id != null)
         {
             id1 = id;
-            command.Parameters.Add(new SqlParameter("ID", id));
+            command.Parameters.Add(dbStructure.GetDbParameter("ID", id));
         }
         else
         {
             id1 = (T)stringParsers[typeof(T)](values[entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.ToLowerInvariant() ?? "id"].ToString());
-            command.Parameters.Add(new SqlParameter("ID", values[entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.ToLowerInvariant() ?? "id"].ToString()));
+            command.Parameters.Add(dbStructure.GetDbParameter("ID", values[entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.ToLowerInvariant() ?? "id"].ToString()));
         }
 
         if (filters != null)
         {
-            command.Parameters.AddRange(filters.Item3.Select(x => new SqlParameter(x.Item1, x.Item2)).ToArray());
+            command.Parameters.AddRange(filters.Item3.Select(x => dbStructure.GetDbParameter(x.Item1, x.Item2)).ToArray());
         }
 
         command.Parameters.AddRange(parameters.ToArray());
@@ -832,7 +832,7 @@ public class GenericDataService<T> : IGenericDataService<T>
         string crossTableQuery = qb2.ToString();
         if (!string.IsNullOrEmpty(crossTableQuery))
         {
-            using DbCommand crossTableCommand = new SqlCommand(crossTableQuery, connection);
+            using DbCommand crossTableCommand = dbStructure.GetDbCommand(crossTableQuery, connection);
             crossTableCommand.Transaction = transaction;
             await crossTableCommand.ExecuteNonQueryAsync();
         }
@@ -888,10 +888,10 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         queryBuilder.Append($"WHERE {dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight}=@ID");
 
-        SqlConnection connection = this.connection as SqlConnection;
+        DbConnection connection = this.connection as DbConnection;
 
-        using DbCommand command = new SqlCommand(queryBuilder.ToString(), connection);
-        command.Parameters.Add(new SqlParameter("ID", id));
+        using DbCommand command = dbStructure.GetDbCommand(queryBuilder.ToString(), connection);
+        command.Parameters.Add(dbStructure.GetDbParameter("ID", id));
 
         string oneEntry = await Get(user, controllerName, id);
 
@@ -973,9 +973,9 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         queryBuilder.Append($" WHERE {dbStructure.ColumnDelimiterLeft}{propertyFrom}{dbStructure.ColumnDelimiterRight}='{id}' AND {dbStructure.ColumnDelimiterLeft}{propertyTo}{dbStructure.ColumnDelimiterRight}='{relatedEntityId}'");
 
-        SqlConnection connection = this.connection as SqlConnection;
+        DbConnection connection = this.connection as DbConnection;
 
-        using DbCommand command = new SqlCommand(queryBuilder.ToString(), connection);
+        using DbCommand command = dbStructure.GetDbCommand(queryBuilder.ToString(), connection);
 
         if (connection.State != ConnectionState.Open)
         {
@@ -1164,12 +1164,12 @@ public class GenericDataService<T> : IGenericDataService<T>
             countQuery += ")";
         }
 
-        SqlConnection connection = this.connection as SqlConnection;
+        DbConnection connection = this.connection as DbConnection;
 
-        using SqlCommand command = new(countQuery, connection);
+        using DbCommand command = dbStructure.GetDbCommand(countQuery, connection);
         if (filterObjectWithPermissions != null)
         {
-            command.Parameters.AddRange(filters.Item3.Select(x => new SqlParameter(x.Item1, x.Item2)).ToArray());
+            command.Parameters.AddRange(filters.Item3.Select(x => dbStructure.GetDbParameter(x.Item1, x.Item2)).ToArray());
         }
 
         if (connection.State != ConnectionState.Open)
@@ -1318,7 +1318,7 @@ public class GenericDataService<T> : IGenericDataService<T>
         return queryBuilder.ToString();
     }
 
-    private string GenerateSelectQuery(Entity entity, IEnumerable<Guid> entities, ref int counter, string roleName, string userName, List<SqlParameter> parameters, string filterProperty = null, object filterValue = null)
+    private string GenerateSelectQuery(Entity entity, IEnumerable<Guid> entities, ref int counter, string roleName, string userName, List<DbParameter> parameters, string filterProperty = null, object filterValue = null)
     {
         string filter = AuthorizeSubentity(roleName, userName, entity);
         StringBuilder queryBuilder = new();
@@ -1453,7 +1453,7 @@ public class GenericDataService<T> : IGenericDataService<T>
                 queryBuilder.Append(filters.Item1);
                 queryBuilder.Append(')');
 
-                parameters.AddRange(filters.Item3.Select(x => new SqlParameter(x.Item1, x.Item2)).ToArray());
+                parameters.AddRange(filters.Item3.Select(x => dbStructure.GetDbParameter(x.Item1, x.Item2)).ToArray());
             }
         }
 

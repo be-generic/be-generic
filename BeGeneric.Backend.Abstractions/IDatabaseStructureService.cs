@@ -1,4 +1,6 @@
-﻿namespace BeGeneric.Backend.Common;
+﻿using System.Data.Common;
+
+namespace BeGeneric.Backend.Common;
 
 public interface IDatabaseStructureService
 {
@@ -18,6 +20,12 @@ public interface IDatabaseStructureService
     string StringDelimiter { get; }
 
     string DataSchema { get; }
+
+    DbCommand GetDbCommand(string commandText, DbConnection connection);
+
+    DbCommand GetDbCommand(string commandText, DbConnection connection, DbTransaction transaction);
+
+    DbParameter GetDbParameter<T>(string parameterName, T value);
 }
 
 public class DatabaseFieldSizeLimitation

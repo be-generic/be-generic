@@ -4,10 +4,28 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>BeGeneric.Backend.Common</PackageId>
+    <Version>0.0.0.1-alpha</Version>
+    <Authors>Be-Generic</Authors>
+    <Company>Be-Generic</Company>
+    <PackageDescription>Abstractions, interfaces and base models for Be-Generic Generic Backend</PackageDescription>
+    <RepositoryUrl>https://github.com/be-generic/be-generic</RepositoryUrl>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageReleaseNotes>
+      Initial release of the MS SQL database provider.
+    </PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="LICENSE.md">
+      <PackagePath></PackagePath>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Pack>true</Pack>
+    </None>
   </ItemGroup>
 
 </Project>

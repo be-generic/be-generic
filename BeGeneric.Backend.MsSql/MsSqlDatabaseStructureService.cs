@@ -1,6 +1,7 @@
 ﻿using BeGeneric.Backend.Common;
 using BeGeneric.Backend.Common.Models;
 using Microsoft.Data.SqlClient;
+using System.Data.Common;
 
 namespace BeGeneric.Backend.Database.MsSql;
 
@@ -10,54 +11,50 @@ public class MsSqlDatabaseStructureService : IDatabaseStructureService
 
     public MsSqlDatabaseStructureService(string connectionString, string dbSchema, List<ColumnMetadataDefinition> metadata)
     {
-        try
-        {
-            using SqlConnection conn = new(connectionString);
-            using SqlCommand command = new(@$"
+        DataSchema = dbSchema;
+
+        using SqlConnection conn = new(connectionString);
+        using SqlCommand command = new(@$"
 SELECT c.COLUMN_NAME, c.TABLE_NAME, c.DATA_TYPE, c.IS_NULLABLE, c.CHARACTER_MAXIMUM_LENGTH
 FROM INFORMATION_SCHEMA.COLUMNS c
 WHERE TABLE_SCHEMA = @Schema
 ", conn);
 
-            command.Parameters.AddWithValue("@Schema", dbSchema);
+        command.Parameters.AddWithValue("@Schema", dbSchema);
 
-            conn.Open();
+        conn.Open();
 
-            var reader = command.ExecuteReader();
+        var reader = command.ExecuteReader();
 
-            while (reader.Read())
-            {
-                string colName = reader.GetFieldValue<string>(0);
-                string tabName = reader.GetFieldValue<string>(1);
-                string type = reader.GetFieldValue<string>(2);
-                int? maxLength = reader.IsDBNull(4) ? null : reader.GetFieldValue<int>(4);
-
-                var meta = metadata.FirstOrDefault(x => string.Equals(x.TableName, tabName, StringComparison.OrdinalIgnoreCase) &&
-                                                        string.Equals(x.ColumnName, colName, StringComparison.OrdinalIgnoreCase));
-
-                bool nullable = reader.GetFieldValue<string>(3) == "YES" && !(meta?.IsRequired ?? false);
-
-                string allowedValueList = meta?.AllowedValues;
-                string regex = meta?.Regex;
-
-                if (!_fieldData.ContainsKey(tabName))
-                {
-                    _fieldData.Add(tabName, new Dictionary<string, DatabaseFieldData>());
-                }
-
-                _fieldData[tabName].Add(colName, new DatabaseFieldData()
-                {
-                    IsNullable = nullable,
-                    MaxLength = maxLength,
-                    MinLength = null,
-                    AllowedValues = allowedValueList?.Split(','),
-                    Regex = regex,
-                    FieldType = type
-                });
-            }
-        }
-        catch
+        while (reader.Read())
         {
+            string colName = reader.GetFieldValue<string>(0);
+            string tabName = reader.GetFieldValue<string>(1);
+            string type = reader.GetFieldValue<string>(2);
+            int? maxLength = reader.IsDBNull(4) ? null : reader.GetFieldValue<int>(4);
+
+            var meta = metadata.FirstOrDefault(x => string.Equals(x.TableName, tabName, StringComparison.OrdinalIgnoreCase) &&
+                                                    string.Equals(x.ColumnName, colName, StringComparison.OrdinalIgnoreCase));
+
+            bool nullable = reader.GetFieldValue<string>(3) == "YES" && !(meta?.IsRequired ?? false);
+
+            string allowedValueList = meta?.AllowedValues;
+            string regex = meta?.Regex;
+
+            if (!_fieldData.ContainsKey(tabName))
+            {
+                _fieldData.Add(tabName, new Dictionary<string, DatabaseFieldData>());
+            }
+
+            _fieldData[tabName].Add(colName, new DatabaseFieldData()
+            {
+                IsNullable = nullable,
+                MaxLength = maxLength,
+                MinLength = null,
+                AllowedValues = allowedValueList?.Split(','),
+                Regex = regex,
+                FieldType = type
+            });
         }
     }
 
@@ -126,5 +123,20 @@ WHERE TABLE_SCHEMA = @Schema
         }
 
         return null;
+    }
+
+    public DbCommand GetDbCommand(string commandText, DbConnection connection)
+    {
+        return new SqlCommand(commandText, connection as SqlConnection);
+    }
+
+    public DbCommand GetDbCommand(string commandText, DbConnection connection, DbTransaction transaction)
+    {
+        return new SqlCommand(commandText, connection as SqlConnection, transaction as SqlTransaction);
+    }
+
+    public DbParameter GetDbParameter<T>(string parameterName, T value)
+    {
+        return new SqlParameter(parameterName, value);
     }
 }
