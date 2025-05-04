@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using BeGeneric.Backend.Common.Models;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace BeGeneric.Backend.Services.Common
 {
@@ -13,8 +14,8 @@ namespace BeGeneric.Backend.Services.Common
     {
         private readonly MemoryCache memoryCache;
 
-        private object lockObject = new object();
-        private object lockObjectEndpoints = new object();
+        private readonly object lockObject = new();
+        private readonly object lockObjectEndpoints = new();
 
         private const string IPCacheKey = "ResetPasswordIP";
 

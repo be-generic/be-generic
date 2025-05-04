@@ -2,12 +2,13 @@
 using BeGeneric.Backend.Common.Models;
 using System.Security.Claims;
 
-namespace BeGeneric.Backend.MsSql;
+namespace BeGeneric.Backend.Database;
 
-public class ComparerObjectGroup: IComparerObjectGroup
+public class ComparerObjectGroup : IComparerObjectGroup
 {
     public string? Conjunction { get; set; }
-    public IComparerObjectGroup[]? Comparisons { get; set; }
+    public IComparerObject[]? Comparisons { get; set; }
+    string? IComparerObjectGroup.Operator { get; set; }
 
     public virtual Tuple<string, int, List<Tuple<string, object>>> ToSQLQuery(ClaimsPrincipal user, Entity entity, string dbSchema, int counter, string originTableAlias, Dictionary<string, SelectPropertyData> joinData)
     {

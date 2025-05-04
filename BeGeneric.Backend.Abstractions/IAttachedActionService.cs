@@ -38,10 +38,10 @@ public class ActionData<T>
     public string? UserName { get; set; }
     public string? Role { get; set; }
 
-    internal string? GetAllResultData { get; set; }
-    internal string? GetOneResultData { get; set; }
-    internal string? InputParameterData { get; set; }
-    internal string? SavedParameterData { get; set; }
+    public string? GetAllResultData { get; set; }
+    public string? GetOneResultData { get; set; }
+    public string? InputParameterData { get; set; }
+    public string? SavedParameterData { get; set; }
 }
 
 public class ActionData<T, G> : ActionData<G>

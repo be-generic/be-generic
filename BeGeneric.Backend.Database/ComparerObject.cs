@@ -2,9 +2,10 @@
 using System.Text.Json;
 using BeGeneric.Backend.Common;
 using BeGeneric.Backend.Common.Exceptions;
+using BeGeneric.Backend.Common.Helpers;
 using BeGeneric.Backend.Common.Models;
 
-namespace BeGeneric.Backend.MsSql;
+namespace BeGeneric.Backend.Database;
 
 public class ComparerObject : ComparerObjectGroup, IComparerObject
 {
@@ -59,7 +60,7 @@ public class ComparerObject : ComparerObjectGroup, IComparerObject
         return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter, parameters);
     }
 
-    public static Tuple<string, int, List<Tuple<string, object>>> ToGroupSQLQuery(List<ComparerObject> comparers, Entity entity, string dbSchema, int counter, string originTableAlias)
+    public static Tuple<string, int, List<Tuple<string, object>>> ToGroupSQLQuery(List<IComparerObject> comparers, Entity entity, string dbSchema, int counter, string originTableAlias)
     {
         List<Tuple<string, object>> parameters = new();
 
@@ -107,19 +108,16 @@ public class ComparerObject : ComparerObjectGroup, IComparerObject
         return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter, parameters);
     }
 
-    private string ResolvePropertyName(Entity entity, string dbSchema, string originTableAlias, string includedFilter = null, Dictionary<string, SelectPropertyData> joinData = null)
+    public string ResolvePropertyName(Entity entity, string dbSchema, string originTableAlias, string includedFilter = null, Dictionary<string, SelectPropertyData> joinData = null)
     {
         var properties = Property.Split(".");
 
         if (properties.Length == 1)
         {
             Property property = entity.Properties.FirstOrDefault(x => x.CamelCaseName().ToLowerInvariant() == properties[0].ToLowerInvariant());
-            if (property == null)
-            {
-                throw new GenericBackendSecurityException(SecurityStatus.BadRequest, "Search filter is not valid");
-            }
-
-            return property.PropertyName;
+            return property == null
+                ? throw new GenericBackendSecurityException(SecurityStatus.BadRequest, "Search filter is not valid")
+                : property.PropertyName;
         }
         else if (joinData != null && joinData.Any(x => string.Equals(x.Value.TableDTOName, string.Join(".", properties[..^1]), StringComparison.OrdinalIgnoreCase)))
         {

@@ -1,4 +1,4 @@
-﻿using BeGeneric.Backend.Settings;
+﻿using BeGeneric.Backend.Common.Models;
 
 namespace BeGeneric.Backend.Services.GenericBackend.Helpers
 {

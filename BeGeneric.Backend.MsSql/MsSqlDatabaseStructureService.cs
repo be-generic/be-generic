@@ -1,4 +1,8 @@
-﻿namespace BeGeneric.Backend.Services.GenericBackend.DatabaseStructure;
+﻿using BeGeneric.Backend.Common;
+using BeGeneric.Backend.Common.Models;
+using Microsoft.Data.SqlClient;
+
+namespace BeGeneric.Backend.Database.MsSql;
 
 public class MsSqlDatabaseStructureService : IDatabaseStructureService
 {

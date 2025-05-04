@@ -1,19 +1,20 @@
 using BeGeneric.Backend;
+using BeGeneric.Backend.Database.MsSql.Extensions;
+using BeGeneric.Backend.Sample;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
-builder.Services.AddControllersWithBeGeneric<Guid>(
-    builder.Configuration.GetConnectionString("connectionString"),
-    databaseSchema: "project_84"
-);
+builder.Services.AddBeGeneric<Guid>()
+    .WithMsSqlDatabase(
+        builder.Configuration.GetConnectionString("connectionString"),
+        "hr")
+    .WithControllers();
 
 var app = builder.Build();
 
@@ -26,6 +27,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseMiddleware<BeGenericAuthenticationMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

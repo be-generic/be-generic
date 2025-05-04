@@ -1,4 +1,4 @@
-﻿using BeGeneric.Backend.Services.GenericBackend.Exceptions;
+﻿using BeGeneric.Backend.Common.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BeGeneric.Backend.Controllers
@@ -11,12 +11,7 @@ namespace BeGeneric.Backend.Controllers
             {
                 await action;
 
-                if (defaultResult != null)
-                {
-                    return defaultResult();
-                }
-
-                return NoContent();
+                return defaultResult != null ? defaultResult() : NoContent();
             }
             catch (GenericBackendSecurityException ex)
             {
@@ -33,12 +28,7 @@ namespace BeGeneric.Backend.Controllers
             try
             {
                 var tmp = await action;
-                if (tmp != null)
-                {
-                    return Content(tmp.ToString(), "application/json");
-                }
-
-                return Ok();
+                return tmp != null ? Content(tmp.ToString(), "application/json") : Ok();
             }
             catch (GenericBackendSecurityException ex)
             {

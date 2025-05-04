@@ -1,6 +1,7 @@
-﻿using BeGeneric.Backend.Controllers;
+﻿using BeGeneric.Backend.Common;
+using BeGeneric.Backend.Common.Models;
+using BeGeneric.Backend.Controllers;
 using BeGeneric.Backend.Services.GenericBackend.Helpers;
-using BeGeneric.Backend.Settings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
