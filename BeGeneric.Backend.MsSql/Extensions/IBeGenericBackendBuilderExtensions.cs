@@ -21,6 +21,8 @@ public static class IBeGenericBackendBuilderExtensions
             return connection;
         });
 
+        builder.Services.AddSingleton<ISqlDialect>(new MsSqlDialect());
+
         return builder;
     }
 }

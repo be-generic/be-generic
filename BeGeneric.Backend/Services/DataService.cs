@@ -1,20 +1,19 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace BeGeneric.Backend.Services
+namespace BeGeneric.Backend.Services;
+
+public interface IDataService
+{ }
+
+public class DataService: IDataService
 {
-    public interface IDataService
-    { }
+    protected readonly IConfiguration config;
+    protected readonly ILogger logger;
 
-    public class DataService: IDataService
+    public DataService(IConfiguration config, ILogger logger = null)
     {
-        protected readonly IConfiguration config;
-        protected readonly ILogger logger;
-
-        public DataService(IConfiguration config, ILogger logger = null)
-        {
-            this.config = config;
-            this.logger = logger;
-        }
+        this.config = config;
+        this.logger = logger;
     }
 }

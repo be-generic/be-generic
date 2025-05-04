@@ -7,7 +7,7 @@ public interface IComparerObjectGroup
 {
     string? Conjunction { get; set; }
 
-    IComparerObject[]? Comparisons { get; set; }
+    IComparerObject[]? ComparisonsInternal { get; }
 
     string? Operator { get; set; }
 

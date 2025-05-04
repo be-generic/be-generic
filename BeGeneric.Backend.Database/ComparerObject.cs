@@ -60,7 +60,7 @@ public class ComparerObject : ComparerObjectGroup, IComparerObject
         return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter, parameters);
     }
 
-    public static Tuple<string, int, List<Tuple<string, object>>> ToGroupSQLQuery(List<IComparerObject> comparers, Entity entity, string dbSchema, int counter, string originTableAlias)
+    public static Tuple<string, int, List<Tuple<string, object>>> ToGroupSQLQuery(List<ComparerObject> comparers, Entity entity, string dbSchema, int counter, string originTableAlias)
     {
         List<Tuple<string, object>> parameters = new();
 

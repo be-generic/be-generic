@@ -8,7 +8,6 @@ using BeGeneric.Backend.Services.GenericBackend.Helpers;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Data.Common;
-using System.Data.SqlClient;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -24,6 +23,7 @@ public class GenericDataService<T> : IGenericDataService<T>
     protected readonly IDatabaseStructureService dbStructure;
     private readonly IAttachedActionService<T> attachedActionService;
     private readonly IDbConnection connection;
+    private readonly ISqlDialect sqlDialect;
 
     internal readonly string dbSchema = "dbo";
 
@@ -34,25 +34,21 @@ public class GenericDataService<T> : IGenericDataService<T>
         { typeof(string), (x) => x },
     };
 
-    private readonly Dictionary<Type, string> dbTypeParsers = new()
-    {
-        { typeof(int), "INT" },
-        { typeof(Guid), "UNIQUEIDENTIFIER" },
-        { typeof(string), "NVARCHAR(100)" },
-    };
-
     public GenericDataService(List<EntityDefinition> entityDefinitions,
         IDatabaseStructureService dbStructure,
         IAttachedActionService<T> attachedActionService,
         IDbConnection connection,
+        ISqlDialect sqlDialect,
         ILogger logger = null)
     {
-        entities = entityDefinitions.ProcessEntities();
         this.logger = logger;
         this.dbStructure = dbStructure;
-        dbSchema = dbStructure.DataSchema;
         this.connection = connection;
         this.attachedActionService = attachedActionService;
+        this.sqlDialect = sqlDialect;
+
+        entities = entityDefinitions.ProcessEntities();
+        dbSchema = dbStructure.DataSchema;
     }
 
     public async Task<string> Get(ClaimsPrincipal user, string controllerName, T id)
@@ -95,7 +91,7 @@ public class GenericDataService<T> : IGenericDataService<T>
             query += $" AND {filters.Item1}";
         }
 
-        query += $" FOR JSON AUTO, INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER";
+        query = sqlDialect.WrapIntoJson(query, true, true, true);
 
         DbConnection connection = this.connection as DbConnection;
 
@@ -175,7 +171,7 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         List<Tuple<string, object>> permissionsFilterParams = new();
 
-        IComparerObject filterObjectWithPermissions = filterObject;
+        ComparerObject filterObjectWithPermissions = filterObject as ComparerObject;
         ComparerObject permissionFilterObject = null;
 
         if (!string.IsNullOrEmpty(permissionsFilter))
@@ -228,10 +224,10 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         if (page != null)
         {
-            query = AddPagingToQuery(query, page.Value - 1, pageSize);
+            query = sqlDialect.AddPagingToQuery(query, page.Value - 1, pageSize);
         }
 
-        query += " FOR JSON AUTO";
+        query = sqlDialect.WrapIntoJson(query, true);
 
         DbConnection connection = this.connection as DbConnection;
 
@@ -313,8 +309,8 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         List<Tuple<string, object>> permissionsFilterParams = new();
 
-        IComparerObject filterObjectWithPermissions = filterObject;
-        IComparerObject permissionFilterObject = null;
+        ComparerObject filterObjectWithPermissions = filterObject as ComparerObject;
+        ComparerObject permissionFilterObject = null;
 
         if (!string.IsNullOrEmpty(permissionsFilter))
         {
@@ -352,10 +348,10 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         if (page != null)
         {
-            query = AddPagingToQuery(query, page.Value - 1, pageSize);
+            query = sqlDialect.AddPagingToQuery(query, page.Value - 1, pageSize);
         }
 
-        query += " FOR JSON PATH";
+        query = sqlDialect.WrapIntoJson(query, false);
 
         DbConnection connection = this.connection as DbConnection;
 
@@ -427,18 +423,15 @@ public class GenericDataService<T> : IGenericDataService<T>
                 && (!string.IsNullOrEmpty(prop.DefaultValue) || prop.ReferencingEntityId != null ||
                     values[(prop.ModelPropertyName ?? prop.PropertyName).ToLowerInvariant()] as JsonValue != null));
 
-        StringBuilder queryBuilder = new();
-        queryBuilder.AppendLine(@$"DECLARE @generated_keys table(id {dbTypeParsers[typeof(T)]});");
-        queryBuilder.Append($"INSERT INTO {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} " +
-            $"({string.Join(", ", usedProperties.Select(x => $"{dbStructure.ColumnDelimiterLeft}{x.PropertyName}{dbStructure.ColumnDelimiterRight}"))})");
-        queryBuilder.Append($"OUTPUT inserted.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} INTO @generated_keys ");
-        queryBuilder.AppendLine($"VALUES ({string.Join(", ", usedProperties.Select((a, b) => "@PropertyValue" + b.ToString()))})");
-
-        queryBuilder.AppendLine(@"SELECT * FROM @generated_keys");
+        var query = sqlDialect.GetInsertReturningId<T>(entity.TableName,
+            dbStructure.DataSchema,
+            entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID",
+            usedProperties.Select(x => $"{sqlDialect.ColumnDelimiterLeft}{x.PropertyName}{sqlDialect.ColumnDelimiterRight}"),
+            usedProperties.Select((a, b) => "PropertyValue" + b.ToString()));
 
         DbConnection connection = this.connection as DbConnection;
 
-        using DbCommand command = dbStructure.GetDbCommand(queryBuilder.ToString(), connection);
+        using DbCommand command = dbStructure.GetDbCommand(query, connection);
         int i = 0;
         List<Tuple<string, string>> errors = new();
 
@@ -614,10 +607,10 @@ public class GenericDataService<T> : IGenericDataService<T>
         }
 
         StringBuilder queryBuilder = new();
-        queryBuilder.Append($"INSERT INTO {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} (");
+        queryBuilder.Append($"INSERT INTO {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{crossEntity.CrossTableName}{sqlDialect.ColumnDelimiterRight} (");
         if (!string.IsNullOrEmpty(crossEntity.ValidFromColumnName))
         {
-            queryBuilder.Append($"{dbStructure.ColumnDelimiterLeft}{crossEntity.ValidFromColumnName}{dbStructure.ColumnDelimiterRight}, ");
+            queryBuilder.Append($"{sqlDialect.ColumnDelimiterLeft}{crossEntity.ValidFromColumnName}{sqlDialect.ColumnDelimiterRight}, ");
         }
 
         queryBuilder.Append($"{propertyFrom}, {propertyTo})");
@@ -625,7 +618,7 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         if (!string.IsNullOrEmpty(crossEntity.ValidFromColumnName))
         {
-            queryBuilder.Append($"GETDATE(), ");
+            queryBuilder.Append($"{sqlDialect.GetCurrentTimestamp}, ");
         }
 
         queryBuilder.Append($"'{id}', '{relatedEntity.Id}')");
@@ -723,14 +716,14 @@ public class GenericDataService<T> : IGenericDataService<T>
         }
 
         StringBuilder queryBuilder = new();
-        queryBuilder.Append($"UPDATE {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} " +
-            $"SET {string.Join($", ", properties.Where(x => values.ContainsKey(x.CamelCaseName().ToLowerInvariant())).Select((x, i) => $"{dbStructure.ColumnDelimiterLeft}{x.PropertyName}{dbStructure.ColumnDelimiterRight}=@PropertyValue" + i.ToString()))}");
+        queryBuilder.Append($"UPDATE {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{entity.TableName}{sqlDialect.ColumnDelimiterRight} " +
+            $"SET {string.Join($", ", properties.Where(x => values.ContainsKey(x.CamelCaseName().ToLowerInvariant())).Select((x, i) => $"{sqlDialect.ColumnDelimiterLeft}{x.PropertyName}{sqlDialect.ColumnDelimiterRight}=@PropertyValue" + i.ToString()))}");
         queryBuilder.Append($" WHERE {entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}=@ID");
 
         if (entity.SoftDeleteColumn != null)
         {
-            queryBuilder.Append($" AND ({dbStructure.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{dbStructure.ColumnDelimiterRight} IS NULL OR " +
-                $"{dbStructure.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{dbStructure.ColumnDelimiterRight} = 0)");
+            queryBuilder.Append($" AND ({sqlDialect.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{sqlDialect.ColumnDelimiterRight} IS NULL OR " +
+                $"{sqlDialect.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{sqlDialect.ColumnDelimiterRight} = 0)");
         }
 
         List<Tuple<string, object>> permissionsFilterParams = new();
@@ -742,7 +735,7 @@ public class GenericDataService<T> : IGenericDataService<T>
             filterObjectWithPermissions = JsonSerializer.Deserialize<ComparerObject>(permissionsFilter, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
         }
 
-        var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, 0, $"{dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight}", null);
+        var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, 0, $"{dbSchema}.{sqlDialect.ColumnDelimiterLeft}{entity.TableName}{sqlDialect.ColumnDelimiterRight}", null);
 
         if (filters != null && filters.Item1 != null && filters.Item1.Replace("(", "").Replace(")", "").Length > 0)
         {
@@ -879,14 +872,14 @@ public class GenericDataService<T> : IGenericDataService<T>
         StringBuilder queryBuilder = new();
         if (entity.SoftDeleteColumn == null)
         {
-            queryBuilder.Append($"DELETE FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} ");
+            queryBuilder.Append($"DELETE FROM {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{entity.TableName}{sqlDialect.ColumnDelimiterRight} ");
         }
         else
         {
-            queryBuilder.Append($"UPDATE {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} SET {dbStructure.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{dbStructure.ColumnDelimiterRight} = 1 ");
+            queryBuilder.Append($"UPDATE {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{entity.TableName}{sqlDialect.ColumnDelimiterRight} SET {sqlDialect.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{sqlDialect.ColumnDelimiterRight} = 1 ");
         }
 
-        queryBuilder.Append($"WHERE {dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight}=@ID");
+        queryBuilder.Append($"WHERE {sqlDialect.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{sqlDialect.ColumnDelimiterRight}=@ID");
 
         DbConnection connection = this.connection as DbConnection;
 
@@ -954,24 +947,24 @@ public class GenericDataService<T> : IGenericDataService<T>
         if (string.IsNullOrEmpty(crossEntity.ActiveColumnName) &&
             string.IsNullOrEmpty(crossEntity.ValidToColumnName))
         {
-            queryBuilder.Append($"DELETE FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} ");
+            queryBuilder.Append($"DELETE FROM {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{crossEntity.CrossTableName}{sqlDialect.ColumnDelimiterRight} ");
         }
 
         if (!string.IsNullOrEmpty(crossEntity.ActiveColumnName))
         {
-            queryBuilder.Append($"UPDATE {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} SET {dbStructure.ColumnDelimiterLeft}{crossEntity.ActiveColumnName}{dbStructure.ColumnDelimiterRight} = 0");
+            queryBuilder.Append($"UPDATE {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{crossEntity.CrossTableName}{sqlDialect.ColumnDelimiterRight} SET {sqlDialect.ColumnDelimiterLeft}{crossEntity.ActiveColumnName}{sqlDialect.ColumnDelimiterRight} = 0");
 
             if (!string.IsNullOrEmpty(crossEntity.ValidToColumnName))
             {
-                queryBuilder.Append($", {dbStructure.ColumnDelimiterLeft}{crossEntity.ValidToColumnName}{dbStructure.ColumnDelimiterRight} = GETDATE()");
+                queryBuilder.Append($", {sqlDialect.ColumnDelimiterLeft}{crossEntity.ValidToColumnName}{sqlDialect.ColumnDelimiterRight} = {sqlDialect.GetCurrentTimestamp}");
             }
         }
         else if (!string.IsNullOrEmpty(crossEntity.ValidToColumnName))
         {
-            queryBuilder.Append($"UPDATE {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} SET {dbStructure.ColumnDelimiterLeft}{crossEntity.ValidToColumnName}{dbStructure.ColumnDelimiterRight} = GETDATE()");
+            queryBuilder.Append($"UPDATE {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{crossEntity.CrossTableName}{sqlDialect.ColumnDelimiterRight} SET {sqlDialect.ColumnDelimiterLeft}{crossEntity.ValidToColumnName}{sqlDialect.ColumnDelimiterRight} = {sqlDialect.GetCurrentTimestamp}");
         }
 
-        queryBuilder.Append($" WHERE {dbStructure.ColumnDelimiterLeft}{propertyFrom}{dbStructure.ColumnDelimiterRight}='{id}' AND {dbStructure.ColumnDelimiterLeft}{propertyTo}{dbStructure.ColumnDelimiterRight}='{relatedEntityId}'");
+        queryBuilder.Append($" WHERE {sqlDialect.ColumnDelimiterLeft}{propertyFrom}{sqlDialect.ColumnDelimiterRight}='{id}' AND {sqlDialect.ColumnDelimiterLeft}{propertyTo}{sqlDialect.ColumnDelimiterRight}='{relatedEntityId}'");
 
         DbConnection connection = this.connection as DbConnection;
 
@@ -1005,24 +998,24 @@ public class GenericDataService<T> : IGenericDataService<T>
                 {
                     if (!string.IsNullOrEmpty(crossEntity.ValidToColumnName))
                     {
-                        qb2.Append($"UPDATE {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} SET ");
-                        qb2.Append($"{dbStructure.ColumnDelimiterLeft}{crossEntity.ValidFromColumnName}{dbStructure.ColumnDelimiterRight} = GETDATE() ");
+                        qb2.Append($"UPDATE {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{crossEntity.CrossTableName}{sqlDialect.ColumnDelimiterRight} SET ");
+                        qb2.Append($"{sqlDialect.ColumnDelimiterLeft}{crossEntity.ValidFromColumnName}{sqlDialect.ColumnDelimiterRight} = {sqlDialect.GetCurrentTimestamp} ");
                     }
                     else if (!string.IsNullOrEmpty(crossEntity.ActiveColumnName))
                     {
-                        qb2.Append($"UPDATE {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} SET ");
-                        qb2.Append($"{dbStructure.ColumnDelimiterLeft}{crossEntity.ActiveColumnName}{dbStructure.ColumnDelimiterRight} = 0 ");
+                        qb2.Append($"UPDATE {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{crossEntity.CrossTableName}{sqlDialect.ColumnDelimiterRight} SET ");
+                        qb2.Append($"{sqlDialect.ColumnDelimiterLeft}{crossEntity.ActiveColumnName}{sqlDialect.ColumnDelimiterRight} = 0 ");
                     }
                     else
                     {
-                        qb2.Append($"DELETE FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} ");
+                        qb2.Append($"DELETE FROM {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{crossEntity.CrossTableName}{sqlDialect.ColumnDelimiterRight} ");
                     }
 
-                    qb2.AppendLine($"WHERE {dbStructure.ColumnDelimiterLeft}{entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = '{newId}'");
+                    qb2.AppendLine($"WHERE {sqlDialect.ColumnDelimiterLeft}{entity1ReferencingColumnName}{sqlDialect.ColumnDelimiterRight} = '{newId}'");
 
                     if (tmp1.Any())
                     {
-                        qb2.Append($" AND {dbStructure.ColumnDelimiterLeft}{entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} NOT IN ('{string.Join("', '", tmp1)}');");
+                        qb2.Append($" AND {sqlDialect.ColumnDelimiterLeft}{entity2ReferencingColumnName}{sqlDialect.ColumnDelimiterRight} NOT IN ('{string.Join("', '", tmp1)}');");
                     }
                     else
                     {
@@ -1032,22 +1025,22 @@ public class GenericDataService<T> : IGenericDataService<T>
 
                 foreach (Guid refId in tmp1)
                 {
-                    qb2.AppendLine($@"IF NOT EXISTS(SELECT * FROM {dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight}
-                           WHERE {dbStructure.ColumnDelimiterLeft}{entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = '{newId}'
-                           AND {dbStructure.ColumnDelimiterLeft}{entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = '{refId}')");
+                    qb2.AppendLine($@"IF NOT EXISTS(SELECT * FROM {sqlDialect.ColumnDelimiterLeft}{crossEntity.CrossTableName}{sqlDialect.ColumnDelimiterRight}
+                           WHERE {sqlDialect.ColumnDelimiterLeft}{entity1ReferencingColumnName}{sqlDialect.ColumnDelimiterRight} = '{newId}'
+                           AND {sqlDialect.ColumnDelimiterLeft}{entity2ReferencingColumnName}{sqlDialect.ColumnDelimiterRight} = '{refId}')");
 
-                    qb2.Append($"INSERT INTO {dbSchema}.{dbStructure.ColumnDelimiterLeft}{crossEntity.CrossTableName}{dbStructure.ColumnDelimiterRight} (");
+                    qb2.Append($"INSERT INTO {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{crossEntity.CrossTableName}{sqlDialect.ColumnDelimiterRight} (");
                     if (!string.IsNullOrEmpty(crossEntity.ValidFromColumnName))
                     {
-                        qb2.Append($"{dbStructure.ColumnDelimiterLeft}{crossEntity.ValidFromColumnName}{dbStructure.ColumnDelimiterRight}, ");
+                        qb2.Append($"{sqlDialect.ColumnDelimiterLeft}{crossEntity.ValidFromColumnName}{sqlDialect.ColumnDelimiterRight}, ");
                     }
 
-                    qb2.Append($"{dbStructure.ColumnDelimiterLeft}{entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight}, {dbStructure.ColumnDelimiterLeft}{entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight})");
+                    qb2.Append($"{sqlDialect.ColumnDelimiterLeft}{entity1ReferencingColumnName}{sqlDialect.ColumnDelimiterRight}, {sqlDialect.ColumnDelimiterLeft}{entity2ReferencingColumnName}{sqlDialect.ColumnDelimiterRight})");
                     qb2.Append($"VALUES (");
 
                     if (!string.IsNullOrEmpty(crossEntity.ValidFromColumnName))
                     {
-                        qb2.Append($"GETDATE(), ");
+                        qb2.Append($"{sqlDialect.GetCurrentTimestamp}, ");
                     }
 
                     qb2.AppendLine($"'{newId}', '{refId}')");
@@ -1074,39 +1067,20 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         if (sortTable.Length > 1)
         {
-            sortBuilder.Append($"JSON_VALUE({dbStructure.ColumnDelimiterLeft}{sortTable[0]}{dbStructure.ColumnDelimiterRight}, '$");
+            sortBuilder.Append(sqlDialect.GetJsonPropertyNavigation(sortTable, sortTable[0]));
         }
         else if (!string.IsNullOrEmpty(sortProperty))
         {
-            sortBuilder.Append(dbStructure.ColumnDelimiterLeft);
-            sortBuilder.Append(entity.Properties.Where(x => x.CamelCaseName().ToLowerInvariant() == sortProperty.ToLowerInvariant()).Select(x => x.PropertyName).FirstOrDefault());
-            sortBuilder.Append(dbStructure.ColumnDelimiterRight);
+            var columnName = entity.Properties
+                .Where(x => x.CamelCaseName().ToLowerInvariant() == sortProperty.ToLowerInvariant())
+                .Select(x => x.PropertyName)
+                .FirstOrDefault();
+
+            sortBuilder.Append($"{sqlDialect.ColumnDelimiterLeft}{columnName}{sqlDialect.ColumnDelimiterRight}");
         }
 
-        if (sortTable.Length > 1)
-        {
-            foreach (var tablePart in sortTable[1..])
-            {
-                sortBuilder.Append($".{tablePart.CamelCaseName()}");
-            }
-
-            sortBuilder.Append("')");
-        }
-
-        string orderByColumn = sortBuilder.Length == 0 ? $"{dbStructure.ColumnDelimiterLeft}{keyProperty}{dbStructure.ColumnDelimiterRight}" : sortBuilder.ToString();
+        string orderByColumn = sortBuilder.Length == 0 ? $"{sqlDialect.ColumnDelimiterLeft}{keyProperty}{sqlDialect.ColumnDelimiterRight}" : sortBuilder.ToString();
         alteredQuery += $" ORDER BY {orderByColumn} {(string.Equals(sortOrder, "ASC", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC")}";
-        return alteredQuery;
-    }
-
-    private static string AddPagingToQuery(string query, int page, int pageSize)
-    {
-        string alteredQuery = query;
-
-        if (pageSize > 0)
-        {
-            alteredQuery += $" OFFSET {page * pageSize} ROWS FETCH NEXT {pageSize} ROWS ONLY";
-        }
-
         return alteredQuery;
     }
 
@@ -1117,24 +1091,24 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         if (summaries == null)
         {
-            countQuery = @$"SELECT COUNT(*) FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} tab1";
+            countQuery = @$"SELECT COUNT(*) FROM {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{entity.TableName}{sqlDialect.ColumnDelimiterRight} tab1";
         }
         else
         {
-            countQuery = @$"SELECT {string.Join(", ", ValidateSummaries(entity, summaries, summaryNames))} FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} tab1";
+            countQuery = @$"SELECT {string.Join(", ", ValidateSummaries(entity, summaries, summaryNames))} FROM {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{entity.TableName}{sqlDialect.ColumnDelimiterRight} tab1";
         }
 
         bool countWhereActivated = false;
 
         if (entity.SoftDeleteColumn != null)
         {
-            countQuery += $" WHERE ({dbStructure.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{dbStructure.ColumnDelimiterRight} IS NULL OR {dbStructure.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{dbStructure.ColumnDelimiterRight} = 0)";
+            countQuery += $" WHERE ({sqlDialect.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{sqlDialect.ColumnDelimiterRight} IS NULL OR {sqlDialect.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{sqlDialect.ColumnDelimiterRight} = 0)";
             countWhereActivated = true;
         }
 
         List<Tuple<string, object>> permissionsFilterParams = new();
 
-        var filterObjectWithPermissions = filterObject;
+        ComparerObject filterObjectWithPermissions = filterObject as ComparerObject;
         ComparerObject permissionFilterObject = null;
 
         if (!string.IsNullOrEmpty(permissionsFilter))
@@ -1285,7 +1259,7 @@ public class GenericDataService<T> : IGenericDataService<T>
         int internalCounter = 1;
 
         var propertiesInternal = properties.Select(x => new Tuple<string, string>(x.Item1, x.Item2.IndexOf(".") > 0 ? x.Item2.Substring(0, x.Item2.IndexOf(".")) : x.Item2)).ToList();
-        queryBuilder.AppendLine($"SELECT tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} AS {entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.CamelCaseName() ?? "id"} ");
+        queryBuilder.AppendLine($"SELECT tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{sqlDialect.ColumnDelimiterRight} AS {entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.CamelCaseName() ?? "id"} ");
 
         var filterData = GetJoinsForSelect(entity, null, $"tab{internalCounter--}", properties, joinData, null, ref internalCounter);
 
@@ -1293,26 +1267,26 @@ public class GenericDataService<T> : IGenericDataService<T>
         {
             foreach (var property in data.Value.Properties)
             {
-                queryBuilder.Append($", {dbStructure.ColumnDelimiterLeft}{data.Value.TableName}{dbStructure.ColumnDelimiterRight}.{dbStructure.ColumnDelimiterLeft}{property.Item3}{dbStructure.ColumnDelimiterRight} AS " +
-                    $"{dbStructure.ColumnDelimiterLeft}{property.Item1}{dbStructure.ColumnDelimiterRight}");
+                queryBuilder.Append($", {sqlDialect.ColumnDelimiterLeft}{data.Value.TableName}{sqlDialect.ColumnDelimiterRight}.{sqlDialect.ColumnDelimiterLeft}{property.Item3}{sqlDialect.ColumnDelimiterRight} AS " +
+                    $"{sqlDialect.ColumnDelimiterLeft}{property.Item1}{sqlDialect.ColumnDelimiterRight}");
             }
         }
 
-        queryBuilder.AppendLine($" FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} AS tab1 ");
+        queryBuilder.AppendLine($" FROM {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{entity.TableName}{sqlDialect.ColumnDelimiterRight} AS tab1 ");
 
         foreach (var data in joinData.Where(x => !string.IsNullOrEmpty(x.Value.JoinPropertyName)))
         {
-            queryBuilder.Append($" LEFT JOIN {dbStructure.ColumnDelimiterLeft}{data.Value.OriginalTableName}{dbStructure.ColumnDelimiterRight} AS " +
-                $"{dbStructure.ColumnDelimiterLeft}{data.Value.TableName}{dbStructure.ColumnDelimiterRight} ON " +
-                $"{dbStructure.ColumnDelimiterLeft}{data.Value.TableName}{dbStructure.ColumnDelimiterRight}.{dbStructure.ColumnDelimiterLeft}{data.Value.IdPropertyName}{dbStructure.ColumnDelimiterRight} = " +
-                $"{dbStructure.ColumnDelimiterLeft}{data.Value.JoinTableName}{dbStructure.ColumnDelimiterRight}.{dbStructure.ColumnDelimiterLeft}{data.Value.JoinPropertyName}{dbStructure.ColumnDelimiterRight} ");
+            queryBuilder.Append($" LEFT JOIN {sqlDialect.ColumnDelimiterLeft}{data.Value.OriginalTableName}{sqlDialect.ColumnDelimiterRight} AS " +
+                $"{sqlDialect.ColumnDelimiterLeft}{data.Value.TableName}{sqlDialect.ColumnDelimiterRight} ON " +
+                $"{sqlDialect.ColumnDelimiterLeft}{data.Value.TableName}{sqlDialect.ColumnDelimiterRight}.{sqlDialect.ColumnDelimiterLeft}{data.Value.IdPropertyName}{sqlDialect.ColumnDelimiterRight} = " +
+                $"{sqlDialect.ColumnDelimiterLeft}{data.Value.JoinTableName}{sqlDialect.ColumnDelimiterRight}.{sqlDialect.ColumnDelimiterLeft}{data.Value.JoinPropertyName}{sqlDialect.ColumnDelimiterRight} ");
         }
 
         queryBuilder.AppendLine($"WHERE 1=1");
 
         if (entity.SoftDeleteColumn != null)
         {
-            queryBuilder.AppendLine($@" AND (tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{dbStructure.ColumnDelimiterRight} IS NULL OR tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{dbStructure.ColumnDelimiterRight} = 0)");
+            queryBuilder.AppendLine($@" AND (tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{sqlDialect.ColumnDelimiterRight} IS NULL OR tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{sqlDialect.ColumnDelimiterRight} = 0)");
         }
 
         return queryBuilder.ToString();
@@ -1324,19 +1298,21 @@ public class GenericDataService<T> : IGenericDataService<T>
         StringBuilder queryBuilder = new();
         int internalCounter = ++counter;
 
-        queryBuilder.AppendLine($"SELECT tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} AS {dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.CamelCaseName() ?? "id"}{dbStructure.ColumnDelimiterRight} ");
+        queryBuilder.AppendLine($"SELECT tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{sqlDialect.ColumnDelimiterRight} AS {sqlDialect.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName.CamelCaseName() ?? "id"}{sqlDialect.ColumnDelimiterRight} ");
 
         foreach (Property property in entity.Properties.Where(x => !x.IsKey && !x.IsHidden))
         {
             if (property.ReferencingEntityId == null)
             {
-                queryBuilder.Append($", tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight} AS {dbStructure.ColumnDelimiterLeft}{property.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
+                queryBuilder.Append($", tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{property.PropertyName}{sqlDialect.ColumnDelimiterRight} AS {sqlDialect.ColumnDelimiterLeft}{property.CamelCaseName()}{sqlDialect.ColumnDelimiterRight}");
             }
             else if (string.IsNullOrEmpty(property.RelatedModelPropertyName))
             {
                 if (!entities.Contains(property.ReferencingEntityId.Value))
                 {
-                    queryBuilder.Append($", (JSON_QUERY(({GenerateSelectQuery(property.ReferencingEntity, entities.Union(new Guid[] { property.ReferencingEntityId.Value }), ref counter, roleName, userName, parameters, $"tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight}")}))) AS {dbStructure.ColumnDelimiterLeft}{property.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
+                    queryBuilder.Append($", (");
+                    queryBuilder.Append(sqlDialect.GetJsonColumn($"({GenerateSelectQuery(property.ReferencingEntity, entities.Union(new Guid[] { property.ReferencingEntityId.Value }), ref counter, roleName, userName, parameters, $"tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{property.PropertyName}{sqlDialect.ColumnDelimiterRight}")})"));
+                    queryBuilder.Append($") AS {sqlDialect.ColumnDelimiterLeft}{property.CamelCaseName()}{sqlDialect.ColumnDelimiterRight}");
                 }
             }
         }
@@ -1345,7 +1321,9 @@ public class GenericDataService<T> : IGenericDataService<T>
         {
             if (!entities.Contains(property.EntityId))
             {
-                queryBuilder.Append($", ({GenerateSelectQuery(property.Entity, entities.Union(new Guid[] { property.EntityId }), ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{property.PropertyName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} FOR JSON AUTO, INCLUDE_NULL_VALUES) AS {dbStructure.ColumnDelimiterLeft}{property.RelatedModelPropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
+                queryBuilder.Append($", (");
+                queryBuilder.Append(sqlDialect.WrapIntoJson($"{GenerateSelectQuery(property.Entity, entities.Union(new Guid[] { property.EntityId }), ref counter, roleName, userName, parameters)} AND {sqlDialect.ColumnDelimiterLeft}{property.PropertyName}{sqlDialect.ColumnDelimiterRight} = tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{sqlDialect.ColumnDelimiterRight}", true, true));
+                queryBuilder.Append($") AS {sqlDialect.ColumnDelimiterLeft}{property.RelatedModelPropertyName.CamelCaseName()}{sqlDialect.ColumnDelimiterRight}");
             }
         }
 
@@ -1364,22 +1342,24 @@ public class GenericDataService<T> : IGenericDataService<T>
             string whereQueryAddition = "";
             if (!string.IsNullOrEmpty(relation.ActiveColumnName))
             {
-                whereQueryAddition = $@" AND {dbStructure.ColumnDelimiterLeft}{relation.ActiveColumnName}{dbStructure.ColumnDelimiterRight} = 1 ";
+                whereQueryAddition = $@" AND {sqlDialect.ColumnDelimiterLeft}{relation.ActiveColumnName}{sqlDialect.ColumnDelimiterRight} = 1 ";
             }
 
             if (!string.IsNullOrEmpty(relation.ValidFromColumnName))
             {
-                whereQueryAddition = $@" AND ({dbStructure.ColumnDelimiterLeft}{relation.ValidFromColumnName}{dbStructure.ColumnDelimiterRight} IS NULL OR {dbStructure.ColumnDelimiterLeft}{relation.ValidFromColumnName}{dbStructure.ColumnDelimiterRight} <= GETDATE()) ";
+                whereQueryAddition = $@" AND ({sqlDialect.ColumnDelimiterLeft}{relation.ValidFromColumnName}{sqlDialect.ColumnDelimiterRight} IS NULL OR {sqlDialect.ColumnDelimiterLeft}{relation.ValidFromColumnName}{sqlDialect.ColumnDelimiterRight} <= {sqlDialect.GetCurrentTimestamp}) ";
             }
 
             if (!string.IsNullOrEmpty(relation.ValidToColumnName))
             {
-                whereQueryAddition += $@" AND ({dbStructure.ColumnDelimiterLeft}{relation.ValidToColumnName}{dbStructure.ColumnDelimiterRight} IS NULL OR {dbStructure.ColumnDelimiterLeft}{relation.ValidToColumnName}{dbStructure.ColumnDelimiterRight} >= GETDATE()) ";
+                whereQueryAddition += $@" AND ({sqlDialect.ColumnDelimiterLeft}{relation.ValidToColumnName}{sqlDialect.ColumnDelimiterRight} IS NULL OR {sqlDialect.ColumnDelimiterLeft}{relation.ValidToColumnName}{sqlDialect.ColumnDelimiterRight} >= {sqlDialect.GetCurrentTimestamp}) ";
             }
 
-            queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity2, entities.Union(new Guid[] { relation.Entity2Id }), ref counter, roleName, userName, parameters)} AND {dbStructure.ColumnDelimiterLeft}{relation.Entity2.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} IN (SELECT {dbStructure.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} FROM " +
-                $"{dbSchema}.{dbStructure.ColumnDelimiterLeft}{relation.CrossTableName}{dbStructure.ColumnDelimiterRight} WHERE {dbStructure.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} {whereQueryAddition}) " +
-                $"FOR JSON AUTO, INCLUDE_NULL_VALUES) AS {dbStructure.ColumnDelimiterLeft}{relation.Entity1PropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
+            queryBuilder.Append(", (");
+            queryBuilder.Append(sqlDialect.WrapIntoJson($"{GenerateSelectQuery(relation.Entity2, entities.Union(new Guid[] { relation.Entity2Id }), ref counter, roleName, userName, parameters)} AND {sqlDialect.ColumnDelimiterLeft}{relation.Entity2.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{sqlDialect.ColumnDelimiterRight} IN (SELECT {sqlDialect.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{sqlDialect.ColumnDelimiterRight} FROM " +
+                $"{dbSchema}.{sqlDialect.ColumnDelimiterLeft}{relation.CrossTableName}{sqlDialect.ColumnDelimiterRight} WHERE {sqlDialect.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{sqlDialect.ColumnDelimiterRight} = tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{sqlDialect.ColumnDelimiterRight} {whereQueryAddition}) ",
+                true, true));
+            queryBuilder.Append($") AS {sqlDialect.ColumnDelimiterLeft}{relation.Entity1PropertyName.CamelCaseName()}{sqlDialect.ColumnDelimiterRight}");
         }
 
         foreach (EntityRelation relation in entity.EntityRelations2)
@@ -1402,35 +1382,36 @@ public class GenericDataService<T> : IGenericDataService<T>
             string whereQueryAddition = "";
             if (!string.IsNullOrEmpty(relation.ActiveColumnName))
             {
-                whereQueryAddition = $@" AND {dbStructure.ColumnDelimiterLeft}{relation.ActiveColumnName}{dbStructure.ColumnDelimiterRight} = 1 ";
+                whereQueryAddition = $@" AND {sqlDialect.ColumnDelimiterLeft}{relation.ActiveColumnName}{sqlDialect.ColumnDelimiterRight} = 1 ";
             }
 
             if (!string.IsNullOrEmpty(relation.ValidFromColumnName))
             {
-                whereQueryAddition = $@" AND ({dbStructure.ColumnDelimiterLeft}{relation.ValidFromColumnName}{dbStructure.ColumnDelimiterRight} IS NULL OR {dbStructure.ColumnDelimiterLeft}{relation.ValidFromColumnName}{dbStructure.ColumnDelimiterRight} <= GETDATE()) ";
+                whereQueryAddition = $@" AND ({sqlDialect.ColumnDelimiterLeft}{relation.ValidFromColumnName}{sqlDialect.ColumnDelimiterRight} IS NULL OR {sqlDialect.ColumnDelimiterLeft}{relation.ValidFromColumnName}{sqlDialect.ColumnDelimiterRight} <= {sqlDialect.GetCurrentTimestamp}) ";
             }
 
             if (!string.IsNullOrEmpty(relation.ValidToColumnName))
             {
-                whereQueryAddition += $@" AND ({dbStructure.ColumnDelimiterLeft}{relation.ValidToColumnName}{dbStructure.ColumnDelimiterRight} IS NULL OR {dbStructure.ColumnDelimiterLeft}{relation.ValidToColumnName}{dbStructure.ColumnDelimiterRight} >= GETDATE()) ";
+                whereQueryAddition += $@" AND ({sqlDialect.ColumnDelimiterLeft}{relation.ValidToColumnName}{sqlDialect.ColumnDelimiterRight} IS NULL OR {sqlDialect.ColumnDelimiterLeft}{relation.ValidToColumnName}{sqlDialect.ColumnDelimiterRight} >= {sqlDialect.GetCurrentTimestamp}) ";
             }
 
-            queryBuilder.Append($", ({GenerateSelectQuery(relation.Entity1, entities.Union(new Guid[] { relation.Entity1Id }), ref counter, roleName, userName, parameters)} AND " +
-                $"{dbStructure.ColumnDelimiterLeft}{relation.Entity1.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} IN " +
-                $"(SELECT {dbStructure.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{dbStructure.ColumnDelimiterRight} FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{relation.CrossTableName}{dbStructure.ColumnDelimiterRight} " +
-                $"WHERE {dbStructure.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{dbStructure.ColumnDelimiterRight} = tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight} {whereQueryAddition}) FOR JSON AUTO, INCLUDE_NULL_VALUES) " +
-                $"AS {dbStructure.ColumnDelimiterLeft}{relation.Entity2PropertyName.CamelCaseName()}{dbStructure.ColumnDelimiterRight}");
+            queryBuilder.Append($", (");
+            queryBuilder.Append(sqlDialect.WrapIntoJson($"{GenerateSelectQuery(relation.Entity1, entities.Union(new Guid[] { relation.Entity1Id }), ref counter, roleName, userName, parameters)} AND " +
+                $"{sqlDialect.ColumnDelimiterLeft}{relation.Entity1.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{sqlDialect.ColumnDelimiterRight} IN " +
+                $"(SELECT {sqlDialect.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{sqlDialect.ColumnDelimiterRight} FROM {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{relation.CrossTableName}{sqlDialect.ColumnDelimiterRight} " +
+                $"WHERE {sqlDialect.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{sqlDialect.ColumnDelimiterRight} = tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{sqlDialect.ColumnDelimiterRight} {whereQueryAddition}) ", true, true));
+            queryBuilder.Append($") AS {sqlDialect.ColumnDelimiterLeft}{relation.Entity2PropertyName.CamelCaseName()}{sqlDialect.ColumnDelimiterRight}");
         }
 
-        queryBuilder.AppendLine($" FROM {dbSchema}.{dbStructure.ColumnDelimiterLeft}{entity.TableName}{dbStructure.ColumnDelimiterRight} AS tab{internalCounter} ");
+        queryBuilder.AppendLine($" FROM {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{entity.TableName}{sqlDialect.ColumnDelimiterRight} AS tab{internalCounter} ");
 
         if (filterProperty != null)
         {
-            queryBuilder.AppendLine($"WHERE tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight}={filterProperty}");
+            queryBuilder.AppendLine($"WHERE tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{sqlDialect.ColumnDelimiterRight}={filterProperty}");
         }
         else if (filterValue != null)
         {
-            queryBuilder.AppendLine($"WHERE tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{dbStructure.ColumnDelimiterRight}=@tab{internalCounter}_val");
+            queryBuilder.AppendLine($"WHERE tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{sqlDialect.ColumnDelimiterRight}=@tab{internalCounter}_val");
         }
         else
         {
@@ -1439,7 +1420,7 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         if (entity.SoftDeleteColumn != null)
         {
-            queryBuilder.AppendLine($@" AND (tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{dbStructure.ColumnDelimiterRight} IS NULL OR tab{internalCounter}.{dbStructure.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{dbStructure.ColumnDelimiterRight} = 0)");
+            queryBuilder.AppendLine($@" AND (tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{sqlDialect.ColumnDelimiterRight} IS NULL OR tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{entity.SoftDeleteColumn}{sqlDialect.ColumnDelimiterRight} = 0)");
         }
 
         if (!string.IsNullOrEmpty(filter))
@@ -1459,7 +1440,7 @@ public class GenericDataService<T> : IGenericDataService<T>
 
         if (filterProperty != null && filterValue == null)
         {
-            queryBuilder.AppendLine($" FOR JSON AUTO, INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER");
+            return sqlDialect.WrapIntoJson(queryBuilder.ToString(), true, true, true);
         }
 
         return queryBuilder.ToString();

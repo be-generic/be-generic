@@ -1,13 +1,12 @@
 ﻿using BeGeneric.Backend.Common;
 using Microsoft.AspNetCore.Mvc;
 
-namespace BeGeneric.Backend.Controllers
+namespace BeGeneric.Backend.Controllers;
+
+[ApiController]
+[Route("", Order = int.MaxValue)]
+public class IntGenericController : GenericController<int>
 {
-    [ApiController]
-    [Route("", Order = int.MaxValue)]
-    public class IntGenericController : GenericController<int>
-    {
-        public IntGenericController(IGenericDataService<int> genericService) : base(genericService)
-        { }
-    }
+    public IntGenericController(IGenericDataService<int> genericService) : base(genericService)
+    { }
 }

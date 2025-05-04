@@ -13,12 +13,6 @@ public interface IDatabaseStructureService
 
     string GetRegexValues(string fieldName, string tableName);
 
-    string ColumnDelimiterLeft { get; }
-
-    string ColumnDelimiterRight { get; }
-
-    string StringDelimiter { get; }
-
     string DataSchema { get; }
 
     DbCommand GetDbCommand(string commandText, DbConnection connection);

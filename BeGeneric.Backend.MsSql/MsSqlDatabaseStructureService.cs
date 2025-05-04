@@ -106,12 +106,6 @@ WHERE TABLE_SCHEMA = @Schema
 
     public string DataSchema { get; internal set; }
 
-    public string ColumnDelimiterLeft => "[";
-
-    public string ColumnDelimiterRight => "]";
-
-    public string StringDelimiter => "'";
-
     private DatabaseFieldData GetField(string fieldName, string tableName)
     {
         if (_fieldData.TryGetValue(tableName, out Dictionary<string, DatabaseFieldData> fieldData))

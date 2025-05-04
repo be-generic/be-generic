@@ -1,10 +1,9 @@
-﻿namespace BeGeneric.Backend.Services.GenericBackend
+﻿namespace BeGeneric.Backend.Services.GenericBackend;
+
+public enum FieldValueErrorEnum
 {
-    public enum FieldValueErrorEnum
-    {
-        UnknownValue,
-        Required,
-        ValueToShort,
-        ValueToLong,
-    }
+    UnknownValue,
+    Required,
+    ValueToShort,
+    ValueToLong,
 }
