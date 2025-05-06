@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeGeneric.Backend.Common", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeGeneric.Backend.Database", "BeGeneric.Backend.Database\BeGeneric.Backend.Database.csproj", "{6E36CF39-5907-446C-851B-1642D8252212}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeGeneric.Backend.Database.MySql", "BeGeneric.Backend.Database.MySql\BeGeneric.Backend.Database.MySql.csproj", "{7B944E9B-53E0-490F-990D-E840564C10F9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +49,10 @@ Global
 		{6E36CF39-5907-446C-851B-1642D8252212}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E36CF39-5907-446C-851B-1642D8252212}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E36CF39-5907-446C-851B-1642D8252212}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B944E9B-53E0-490F-990D-E840564C10F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B944E9B-53E0-490F-990D-E840564C10F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B944E9B-53E0-490F-990D-E840564C10F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B944E9B-53E0-490F-990D-E840564C10F9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

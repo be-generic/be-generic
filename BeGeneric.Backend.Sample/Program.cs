@@ -1,5 +1,6 @@
 using BeGeneric.Backend;
 using BeGeneric.Backend.Database.MsSql.Extensions;
+using BeGeneric.Backend.Database.MySql.Extensions;
 using BeGeneric.Backend.Sample;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,9 +12,12 @@ builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
 builder.Services.AddBeGeneric<Guid>()
-    .WithMsSqlDatabase(
-        builder.Configuration.GetConnectionString("connectionString"),
-        "hr")
+    //.WithMsSqlDatabase(
+    //    builder.Configuration.GetConnectionString("connectionString"),
+    //    "project_59_development")
+    .WithMySqlDatabase(
+        builder.Configuration.GetConnectionString("mySqlConnectionString"),
+        "anchansi_be_gen_test")
     .WithControllers();
 
 var app = builder.Build();

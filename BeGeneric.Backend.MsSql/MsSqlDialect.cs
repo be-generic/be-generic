@@ -63,6 +63,11 @@ VALUES ({string.Join(", ", values)});
 ";
     }
 
+    public string GetBasicSelectQuery(IList<string> columnNames, IList<string> columnValues, bool wrapInJson = false)
+    {
+        return $"SELECT {string.Join(", ", columnValues.Select((x, i) => $"{x} AS {columnNames[i]}"))} ";
+    }
+
     public string ColumnDelimiterLeft => "[";
     public string ColumnDelimiterRight => "]";
     public string StringDelimiter => "'";
