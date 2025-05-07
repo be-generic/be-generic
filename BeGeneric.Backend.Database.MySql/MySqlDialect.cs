@@ -24,8 +24,8 @@ public class MySqlDialect : ISqlDialect
     {
         return $@"
 INSERT INTO `{schemaName}`.`{tableName}` ({string.Join(", ", insertColumns.Select(col => $"`{col}`"))})
-VALUES ({string.Join(", ", valuePlaceholders.Select(x => $"@{x}"))});
-SELECT LAST_INSERT_ID() AS `{keyColumn}`;";
+VALUES ({string.Join(", ", valuePlaceholders.Select(x => $"@{x}"))})
+RETURNING `{keyColumn}`;";
     }
 
     public string GetInsertIfNotExists(string tableName, string column1, string value1, string column2, string value2, string? validFromColumn = null)
@@ -69,6 +69,74 @@ WHERE NOT EXISTS (
 )";
     }
 
+    public string GetBasicSelectQuery(IList<string> columnNames, IList<string> columnValues, IList<string> columnPaths, IList<string> outputPaths, bool wrapInJson = false)
+    {
+        /*
+        var columnNames = new List<string> { "Id", "Title", "CategoryId", "CategoryName" };
+        var columnValues = new List<string> { "t.Id", "t.Title", "c.Id", "c.Name" };
+        var columnPaths = new List<string> { "id", "title", "id", "name" };
+        var outputPaths = new List<string> { "", "", "category", "category" };
+         */
+
+        if (columnNames.Count != columnValues.Count ||
+            columnNames.Count != columnPaths.Count ||
+            columnNames.Count != outputPaths.Count)
+        {
+            throw new ArgumentException("All input lists must have the same length.");
+        }
+
+        if (!wrapInJson)
+        {
+            var selectClauses = new List<string>();
+
+            for (int i = 0; i < columnNames.Count; i++)
+            {
+                string alias = string.IsNullOrWhiteSpace(outputPaths[i])
+                    ? columnPaths[i]
+                    : $"{outputPaths[i]}_{columnPaths[i]}"; // Flattened alias for SQL column naming
+                selectClauses.Add($"{columnValues[i]} AS {alias}");
+            }
+
+            return $"SELECT {string.Join(", ", selectClauses)}";
+        }
+        else
+        {
+            var rootFields = new Dictionary<string, List<(string Key, string Value)>>();
+
+            for (int i = 0; i < columnNames.Count; i++)
+            {
+                string parent = outputPaths[i]?.Trim() ?? "";
+                if (!rootFields.ContainsKey(parent))
+                {
+                    rootFields[parent] = new List<(string, string)>();
+                }
+
+                rootFields[parent].Add((columnPaths[i], columnValues[i]));
+            }
+
+            var jsonFields = new List<string>();
+
+            foreach (var group in rootFields)
+            {
+                if (string.IsNullOrEmpty(group.Key))
+                {
+                    foreach (var (key, val) in group.Value)
+                    {
+                        jsonFields.Add($"'{key}', {val}");
+                    }
+                }
+                else
+                {
+                    var nestedFields = string.Join(", ", group.Value.Select(f => $"'{f.Key}', {f.Value}"));
+                    jsonFields.Add($"'{group.Key}', JSON_OBJECT({nestedFields})");
+                }
+            }
+
+            string jsonObject = $"JSON_OBJECT({string.Join(", ", jsonFields)})";
+            return $"SELECT JSON_ARRAYAGG({jsonObject})";
+        }
+    }
+
     public string ColumnDelimiterLeft => "`";
     public string ColumnDelimiterRight => "`";
     public string StringDelimiter => "'";
@@ -78,8 +146,7 @@ WHERE NOT EXISTS (
 
     public string WrapIntoJson(string baseQuery, bool auto, bool includeNulls = false, bool withoutWrapper = false)
     {
-        // MySQL does not support FOR JSON, use JSON_ARRAYAGG or JSON_OBJECT functions instead
-        // Implementing a placeholder as behavior may depend on use case
+        // MySQL does not support FOR JSON, use JSON_ARRAYAGG or JSON_OBJECT functions in SELECT query instead
         return baseQuery;
     }
 }

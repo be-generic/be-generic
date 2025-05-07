@@ -14,5 +14,5 @@ public interface ISqlDialect
     string GetInsertReturningId<T>(string tableName, string schemaName, string keyColumn, IEnumerable<string> insertColumns, IEnumerable<string> valuePlaceholders);
     string GetInsertIfNotExists(string tableName, string column1, string value1, string column2, string value2, string? validFromColumn = null);
 
-    string GetBasicSelectQuery(IList<string> columnNames, IList<string> columnValues, bool wrapInJson = false);
+    string GetBasicSelectQuery(IList<string> columnNames, IList<string> columnValues, IList<string> columnPaths, IList<string> outputPaths, bool wrapInJson = false);
 }

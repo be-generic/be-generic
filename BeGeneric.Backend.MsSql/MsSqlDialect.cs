@@ -68,11 +68,41 @@ VALUES ({string.Join(", ", values)});
         return $"SELECT {string.Join(", ", columnValues.Select((x, i) => $"{x} AS {columnNames[i]}"))} ";
     }
 
+    public string GetBasicSelectQuery(IList<string> columnNames, IList<string> columnValues, IList<string> columnPaths, IList<string> outputPaths, bool wrapInJson = false)
+    {
+        if (columnNames.Count != columnValues.Count ||
+            columnNames.Count != columnPaths.Count ||
+            columnNames.Count != outputPaths.Count)
+        {
+            throw new ArgumentException("All input lists must have the same length.");
+        }
+
+        var selectClauses = new List<string>();
+
+        for (int i = 0; i < columnNames.Count; i++)
+        {
+            string alias = !wrapInJson
+                ? columnPaths[i]  // flat key for plain SELECT
+                : string.IsNullOrWhiteSpace(outputPaths[i])
+                    ? columnPaths[i]
+                    : $"{outputPaths[i]}.{columnPaths[i]}";  // nested JSON path for FOR JSON PATH
+
+            selectClauses.Add($"{columnValues[i]} AS [{alias}]");
+        }
+
+        string selectClause = string.Join(", ", selectClauses);
+
+        string query = $@"SELECT {selectClause} ";
+
+        return query;
+    }
+
+
     public string ColumnDelimiterLeft => "[";
     public string ColumnDelimiterRight => "]";
     public string StringDelimiter => "'";
     public string GetCurrentTimestamp => "GETUTCDATE()";
 
     public string GetJsonColumn(string columnAlias) => $"JSON_QUERY({columnAlias})";
-    public string WrapIntoJson(string baseQuery, bool auto, bool includeNulls = false, bool withoutWrapper = false) => $"{baseQuery} FOR JSON {(auto ? "AUTO" : "PATH")}{(includeNulls ? ", INCLUDE_NULL_VALUES" : "")}{(withoutWrapper ? ", WITHOUT_ARRAY_WRAPPER" : "")}";
+    public string WrapIntoJson(string baseQuery, bool auto, bool includeNulls = false, bool withoutWrapper = false) => $"{baseQuery} FOR JSON PATH {(includeNulls ? ", INCLUDE_NULL_VALUES" : "")}{(withoutWrapper ? ", WITHOUT_ARRAY_WRAPPER" : "")}";
 }

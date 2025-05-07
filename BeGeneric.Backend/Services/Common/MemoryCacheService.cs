@@ -7,7 +7,6 @@ public interface IMemoryCacheService
 {
     IPCacheResult CheckCachedIP(string ipAddress);
     void TryGetEntities(out List<Entity> entities, Func<List<Entity>> getEntities);
-    void TryGetEndpoints(out List<Endpoint> endpoints, Func<List<Endpoint>> getEndpoints);
 }
 
 public class MemoryCacheService : IMemoryCacheService
@@ -66,29 +65,6 @@ public class MemoryCacheService : IMemoryCacheService
 #endif
 
             this.memoryCache.Set("entities", entities, cacheEntryOptions);
-        }
-    }
-
-    public void TryGetEndpoints(out List<Endpoint> endpoints, Func<List<Endpoint>> getEndpoints)
-    {
-        lock (lockObjectEndpoints)
-        {
-            if (this.memoryCache.TryGetValue("endpoints", out List<Endpoint> cachedEntities))
-            {
-                endpoints = cachedEntities;
-            }
-
-            endpoints = getEndpoints();
-
-#if DEBUG
-            var cacheEntryOptions = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
-#else
-            var cacheEntryOptions = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromMinutes(20));
-#endif
-
-            this.memoryCache.Set("endpoints", endpoints, cacheEntryOptions);
         }
     }
 }

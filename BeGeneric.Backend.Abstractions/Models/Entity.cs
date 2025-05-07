@@ -20,6 +20,4 @@ public class Entity
 
     public virtual List<EntityRelation> EntityRelations1 { get; set; }
     public virtual List<EntityRelation> EntityRelations2 { get; set; }
-
-    public virtual List<Endpoint> Endpoints { get; set; }
 }
