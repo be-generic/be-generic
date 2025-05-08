@@ -1,7 +1,7 @@
 ﻿using BeGeneric.Backend.Common.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
-namespace BeGeneric.Backend.Controllers;
+namespace BeGeneric.Backend.ApiModels;
 
 public class BaseController: ControllerBase
 {
