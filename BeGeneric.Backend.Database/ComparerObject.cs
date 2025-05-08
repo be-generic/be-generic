@@ -280,9 +280,9 @@ public class ComparerObject : ComparerObjectGroup, IComparerObject
             "gt" => $"$filterParam < {any}$property",
             "not null" => $"$property IS NOT NULL",
             "null" => $"$property IS NULL",
-            "contains" => "$property LIKE '%' + $filterParam + '%'",
-            "startswith" => "$property LIKE $filterParam + '%'",
-            "endswith" => "$property LIKE '%' + $filterParam",
+            "contains" => "$property LIKE CONCAT('%', $filterParam, '%')",
+            "startswith" => "$property LIKE CONCAT($filterParam, '%')",
+            "endswith" => "$property LIKE CONCAT('%', $filterParam)",
             _ => "1 = 1",
         };
     }

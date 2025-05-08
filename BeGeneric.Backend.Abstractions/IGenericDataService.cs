@@ -8,7 +8,7 @@ public interface IGenericDataService<T>
 {
     Task<string> Get(ClaimsPrincipal user, string controllerName, T id);
 
-    Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string sortProperty = null, string sortOrder = "ASC", IComparerObject? filterObject = null, SummaryRequestObject[] summaries = null);
+    Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string sortProperty = null, string sortOrder = "ASC", IComparerObject? filterObject = null, SummaryRequestObject[] summaries = null, string[] properties = null);
 
     Task<string> Post(ClaimsPrincipal user, string controllerName, Dictionary<string, JsonNode> fieldValues);
 

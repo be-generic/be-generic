@@ -1,4 +1,5 @@
-﻿using BeGeneric.Backend.Common;
+﻿using BeGeneric.Backend.ApiModels;
+using BeGeneric.Backend.Common;
 using BeGeneric.Backend.Common.Exceptions;
 using BeGeneric.Backend.Common.Models;
 using BeGeneric.Backend.Database;
@@ -25,13 +26,13 @@ public class GenericController<T> : BaseController
     [HttpGet("{id}")]
     public async Task<IActionResult> GetOne(T id)
     {
-        return await GetActionResult(this.genericService.Get(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id));
+        return await GetActionResult(genericService.Get(User, ControllerContext.RouteData.Values["controller"].ToString(), id));
     }
 
     [HttpGet]
     public async Task<IActionResult> GetAll(int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC")
     {
-        return await GetActionResult(this.genericService.Get(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), page, pageSize, sortProperty, sortOrder));
+        return await GetActionResult(genericService.Get(User, ControllerContext.RouteData.Values["controller"].ToString(), page, pageSize, sortProperty, sortOrder));
     }
 
     [HttpPost("filter")]
@@ -39,7 +40,7 @@ public class GenericController<T> : BaseController
     {
         if (!string.IsNullOrEmpty(dataRequestObject?.Property) || !string.IsNullOrEmpty(dataRequestObject?.Conjunction))
         {
-            return await GetActionResult(this.genericService.Get(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), page, pageSize, sortProperty, sortOrder, dataRequestObject, dataRequestObject?.Summaries));
+            return await GetActionResult(genericService.Get(User, ControllerContext.RouteData.Values["controller"].ToString(), page, pageSize, sortProperty, sortOrder, dataRequestObject, dataRequestObject?.Summaries));
         }
         else
         {
@@ -50,7 +51,7 @@ public class GenericController<T> : BaseController
                 comparer = JsonSerializer.Deserialize<ComparerObject>(dataRequestObject?.Filter.ToString(), new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
             }
 
-            return await GetActionResult(this.genericService.Get(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), page, pageSize, sortProperty, sortOrder, comparer, dataRequestObject?.Summaries));
+            return await GetActionResult(genericService.Get(User, ControllerContext.RouteData.Values["controller"].ToString(), page, pageSize, sortProperty, sortOrder, comparer, dataRequestObject?.Summaries));
         }
     }
 
@@ -61,20 +62,20 @@ public class GenericController<T> : BaseController
         Dictionary<string, JsonNode> actualFeldValues;
 
         HttpContext.Request.Body.Seek(0, SeekOrigin.Begin);
-        using (var stream = new StreamReader(this.Request.Body))
+        using (var stream = new StreamReader(Request.Body))
         {
             var body = await stream.ReadToEndAsync();
             actualFeldValues = JsonSerializer.Deserialize<Dictionary<string, JsonNode>>(body);
         }
 
-        return await GetActionResult(this.genericService.Post(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), actualFeldValues));
+        return await GetActionResult(genericService.Post(User, ControllerContext.RouteData.Values["controller"].ToString(), actualFeldValues));
     }
 
     [HttpPost("{id}/{relatedEntityName}")]
     public async Task<IActionResult> PostRelatedEntity(T id, [FromBody] RelatedEntityObject<T> relatedEntity)
     {
         string relatedEntityName = ControllerContext.ActionDescriptor.ActionName.Substring("post-".Length);
-        return await GetActionResult(this.genericService.PostRelatedEntity(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, relatedEntityName, relatedEntity));
+        return await GetActionResult(genericService.PostRelatedEntity(User, ControllerContext.RouteData.Values["controller"].ToString(), id, relatedEntityName, relatedEntity));
     }
 
     [HttpPut("{id?}")]
@@ -85,7 +86,7 @@ public class GenericController<T> : BaseController
         Dictionary<string, JsonNode> actualFeldValues;
 
         HttpContext.Request.Body.Seek(0, SeekOrigin.Begin);
-        using (var stream = new StreamReader(this.Request.Body))
+        using (var stream = new StreamReader(Request.Body))
         {
             var body = await stream.ReadToEndAsync();
             actualFeldValues = JsonSerializer.Deserialize<Dictionary<string, JsonNode>>(body);
@@ -93,12 +94,12 @@ public class GenericController<T> : BaseController
 
         try
         {
-            await this.genericService.Patch(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, actualFeldValues);
+            await genericService.Patch(User, ControllerContext.RouteData.Values["controller"].ToString(), id, actualFeldValues);
             return NoContent();
         }
         catch (GenericBackendSecurityException ex)
         {
-            return this.HandleGenericException(ex);
+            return HandleGenericException(ex);
         }
         catch
         {
@@ -114,7 +115,7 @@ public class GenericController<T> : BaseController
         Dictionary<string, JsonNode> actualFeldValues;
 
         HttpContext.Request.Body.Seek(0, SeekOrigin.Begin);
-        using (var stream = new StreamReader(this.Request.Body))
+        using (var stream = new StreamReader(Request.Body))
         {
             var body = await stream.ReadToEndAsync();
             actualFeldValues = JsonSerializer.Deserialize<Dictionary<string, JsonNode>>(body);
@@ -123,31 +124,31 @@ public class GenericController<T> : BaseController
         T id1;
         try
         {
-            id1 = await this.genericService.Patch(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, actualFeldValues);
+            id1 = await genericService.Patch(User, ControllerContext.RouteData.Values["controller"].ToString(), id, actualFeldValues);
         }
         catch (GenericBackendSecurityException ex)
         {
-            return this.HandleGenericException(ex);
+            return HandleGenericException(ex);
         }
         catch
         {
             throw new Exception("Unknown error");
         }
 
-        return await GetActionResult(this.genericService.Get(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id1));
+        return await GetActionResult(genericService.Get(User, ControllerContext.RouteData.Values["controller"].ToString(), id1));
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(T id)
     {
-        return await GetActionResult(this.genericService.Delete(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id));
+        return await GetActionResult(genericService.Delete(User, ControllerContext.RouteData.Values["controller"].ToString(), id));
     }
 
     [HttpDelete("{id}/{relatedEntityName}/{relatedEntityId}")]
     public async Task<IActionResult> DeleteRelatedEntity(T id, T relatedEntityId)
     {
         string relatedEntityName = ControllerContext.ActionDescriptor.ActionName.Substring("delete-".Length);
-        return await GetActionResult(this.genericService.DeleteRelatedEntity(this.User, this.ControllerContext.RouteData.Values["controller"].ToString(), id, relatedEntityName, relatedEntityId));
+        return await GetActionResult(genericService.DeleteRelatedEntity(User, ControllerContext.RouteData.Values["controller"].ToString(), id, relatedEntityName, relatedEntityId));
     }
 }
 

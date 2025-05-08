@@ -5,13 +5,9 @@ using BeGeneric.Backend.Common.Models;
 using BeGeneric.Backend.Database;
 using BeGeneric.Backend.Services.GenericBackend;
 using BeGeneric.Backend.Services.GenericBackend.Helpers;
-using Microsoft.AspNetCore.Http.Extensions;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Data.Common;
-using System.IO;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -147,7 +143,7 @@ public class GenericDataService<T> : IGenericDataService<T>
         }
     }
 
-    public async Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC", IComparerObject? filterObject = null, SummaryRequestObject[] summaries = null)
+    public async Task<string> Get(ClaimsPrincipal user, string controllerName, int? page = null, int pageSize = 10, string? sortProperty = null, string? sortOrder = "ASC", IComparerObject? filterObject = null, SummaryRequestObject[] summaries = null, string[] properties = null)
     {
         (Entity entity, string permissionsFilter, string _) = Authorize(user, controllerName, getAll: true);
 
@@ -209,7 +205,7 @@ public class GenericDataService<T> : IGenericDataService<T>
         }
 
         List<Guid> entityIds = new();
-        query += GenerateSelectQuery(entity, entityIds, ref tabCounter, roleName, userName, parameters, true, "");
+        query += GenerateSelectQuery(entity, entityIds, ref tabCounter, roleName, userName, parameters, true, "", null, properties);
 
         var joinData = new Dictionary<string, SelectPropertyData>();
         var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, parameters.Count, "tab1", joinData);
@@ -1148,11 +1144,27 @@ public class GenericDataService<T> : IGenericDataService<T>
         return filterData;
     }
 
-    public string GenerateSelectQuery(Entity entity, IEnumerable<Guid> entities, ref int counter, string roleName, string userName, List<DbParameter> parameters, bool wrapInJson, string path, object filterValue = null)
+    public string GenerateSelectQuery(Entity entity, IEnumerable<Guid> entities, ref int counter, string roleName, string userName, List<DbParameter> parameters, bool wrapInJson, string path, object filterValue = null, string[] properties = null)
     {
         string filter = GenericDataService<T>.AuthorizeSubentity(roleName, userName, entity);
-        var model = GenerateSelectQueryInternal(entity, entities, ref counter, userName, filter, parameters, wrapInJson, path, null, filterValue);
+        var model = GenerateSelectQueryInternal(entity, entities, ref counter, userName, parameters, path, null, filterValue);
         var queryBuilder = new StringBuilder();
+
+        if (properties != null)
+        {
+            for (int i = 0; i < model.PropertyNames.Count; i++)
+            {
+                string property = GetNewPath(model.OutputPaths[i], model.ColumnPaths[i]);
+                if (!properties.Contains(property))
+                {
+                    model.PropertyNames.RemoveAt(i);
+                    model.PropertyValues.RemoveAt(i);
+                    model.ColumnPaths.RemoveAt(i);
+                    model.OutputPaths.RemoveAt(i);
+                    i--;
+                }
+            }
+        }
 
         queryBuilder.AppendLine(sqlDialect.GetBasicSelectQuery(model.PropertyNames, model.PropertyValues, model.ColumnPaths, model.OutputPaths, wrapInJson));
         queryBuilder.AppendLine($" FROM ");
@@ -1181,7 +1193,7 @@ public class GenericDataService<T> : IGenericDataService<T>
         return queryBuilder.ToString();
     }
 
-    private GenerateSelectQueryModel GenerateSelectQueryInternal(Entity entity, IEnumerable<Guid> entities, ref int counter, string userName, string filter, List<DbParameter> parameters, bool wrapInJson, string path, string filterProperty = null, object filterValue = null)
+    private GenerateSelectQueryModel GenerateSelectQueryInternal(Entity entity, IEnumerable<Guid> entities, ref int counter, string userName, List<DbParameter> parameters, string path, string filterProperty = null, object filterValue = null)
     {
         int internalCounter = ++counter;
 
@@ -1221,7 +1233,7 @@ public class GenericDataService<T> : IGenericDataService<T>
             {
                 if (!entities.Contains(property.ReferencingEntityId.Value))
                 {
-                    var model = GenerateSelectQueryInternal(property.ReferencingEntity, entities.Union(new Guid[] { property.ReferencingEntityId.Value }), ref counter, userName, null, parameters, false, GetNewPath(path, property.CamelCaseName()), $"tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{property.PropertyName}{sqlDialect.ColumnDelimiterRight}");
+                    var model = GenerateSelectQueryInternal(property.ReferencingEntity, entities.Union(new Guid[] { property.ReferencingEntityId.Value }), ref counter, userName, parameters, GetNewPath(path, property.CamelCaseName()), $"tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{property.PropertyName}{sqlDialect.ColumnDelimiterRight}");
 
                     joinPart.Append(model.JoinQueryPart);
                     propertyValues.AddRange(model.PropertyValues);
@@ -1236,7 +1248,7 @@ public class GenericDataService<T> : IGenericDataService<T>
         {
             if (!entities.Contains(property.EntityId))
             {
-                var model = GenerateSelectQueryInternal(property.Entity, entities.Union(new Guid[] { property.EntityId }), ref counter, userName, null, parameters, true, GetNewPath(path, property.RelatedModelPropertyName.CamelCaseName()));
+                var model = GenerateSelectQueryInternal(property.Entity, entities.Union(new Guid[] { property.EntityId }), ref counter, userName, parameters, GetNewPath(path, property.RelatedModelPropertyName.CamelCaseName()));
 
                 model.JoinQueryPart += $" AND {sqlDialect.ColumnDelimiterLeft}{property.PropertyName}{sqlDialect.ColumnDelimiterRight} = tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "Id"}{sqlDialect.ColumnDelimiterRight}";
 
@@ -1276,7 +1288,7 @@ public class GenericDataService<T> : IGenericDataService<T>
                 whereQueryAddition += $@" AND ({sqlDialect.ColumnDelimiterLeft}{relation.ValidToColumnName}{sqlDialect.ColumnDelimiterRight} IS NULL OR {sqlDialect.ColumnDelimiterLeft}{relation.ValidToColumnName}{sqlDialect.ColumnDelimiterRight} >= {sqlDialect.GetCurrentTimestamp}) ";
             }
 
-            var model = GenerateSelectQueryInternal(relation.Entity2, entities.Union(new Guid[] { relation.Entity2Id }), ref counter, userName, null, parameters, true, relation.Entity1PropertyName.CamelCaseName());
+            var model = GenerateSelectQueryInternal(relation.Entity2, entities.Union(new Guid[] { relation.Entity2Id }), ref counter, userName, parameters, relation.Entity1PropertyName.CamelCaseName());
             model.JoinQueryPart += $" AND {sqlDialect.ColumnDelimiterLeft}{relation.Entity2.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{sqlDialect.ColumnDelimiterRight} IN (SELECT {sqlDialect.ColumnDelimiterLeft}{relation.Entity2ReferencingColumnName}{sqlDialect.ColumnDelimiterRight} FROM " +
                 $"{dbSchema}.{sqlDialect.ColumnDelimiterLeft}{relation.CrossTableName}{sqlDialect.ColumnDelimiterRight} WHERE {sqlDialect.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{sqlDialect.ColumnDelimiterRight} = tab{internalCounter}.{sqlDialect.ColumnDelimiterLeft}{entity.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{sqlDialect.ColumnDelimiterRight} {whereQueryAddition}) ";
 
@@ -1320,7 +1332,7 @@ public class GenericDataService<T> : IGenericDataService<T>
                 whereQueryAddition += $@" AND ({sqlDialect.ColumnDelimiterLeft}{relation.ValidToColumnName}{sqlDialect.ColumnDelimiterRight} IS NULL OR {sqlDialect.ColumnDelimiterLeft}{relation.ValidToColumnName}{sqlDialect.ColumnDelimiterRight} >= {sqlDialect.GetCurrentTimestamp}) ";
             }
 
-            var model = GenerateSelectQueryInternal(relation.Entity1, entities.Union(new Guid[] { relation.Entity1Id }), ref counter, userName, null, parameters, true, relation.Entity2PropertyName.CamelCaseName());
+            var model = GenerateSelectQueryInternal(relation.Entity1, entities.Union(new Guid[] { relation.Entity1Id }), ref counter, userName, parameters, relation.Entity2PropertyName.CamelCaseName());
             model.JoinQueryPart += " AND " +
                 $"{sqlDialect.ColumnDelimiterLeft}{relation.Entity1.Properties.FirstOrDefault(x => x.IsKey)?.PropertyName ?? "ID"}{sqlDialect.ColumnDelimiterRight} IN " +
                 $"(SELECT {sqlDialect.ColumnDelimiterLeft}{relation.Entity1ReferencingColumnName}{sqlDialect.ColumnDelimiterRight} FROM {dbSchema}.{sqlDialect.ColumnDelimiterLeft}{relation.CrossTableName}{sqlDialect.ColumnDelimiterRight} " +
