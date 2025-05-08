@@ -146,7 +146,7 @@ public class GraphQLToGenericQueryConverter
             GraphQLBooleanValue b => b.Value,
             GraphQLIntValue i => int.Parse(i.Value),
             GraphQLFloatValue f => double.Parse(f.Value),
-            GraphQLStringValue s => s.Value,
+            GraphQLStringValue s => s.Value.ToString(),
             _ => value.ToString()
         };
     }
