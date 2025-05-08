@@ -1,15 +1,13 @@
-﻿using BeGeneric.Backend.Controllers;
-using BeGeneric.Backend.Services.BeGeneric.DatabaseStructure;
+﻿using BeGeneric.Backend.Common;
+using BeGeneric.Backend.Common.Models;
 using BeGeneric.Backend.Services.GenericBackend.Helpers;
-using BeGeneric.Backend.Settings;
-using BeGeneric.GenericModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
-using System;
 using System.Reflection;
+using BeGeneric.Backend.Controllers;
 
-namespace BeGeneric.Backend.Services.BeGeneric
+namespace BeGeneric.Backend.Services.GenericBackend
 {
     public class ServiceControllerDynamicRouteProvider : IApplicationModelProvider
     {
@@ -24,7 +22,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
         public void OnProvidersExecuting(ApplicationModelProviderContext context)
         {
-            if (this.entities == null)
+            if (entities == null)
             {
                 return;
             }
@@ -32,8 +30,8 @@ namespace BeGeneric.Backend.Services.BeGeneric
             var genericController = context
                 .Result
                 .Controllers
-                .Where(x => x.ControllerType.BaseType != null && 
-                    x.ControllerType.BaseType.IsGenericType && 
+                .Where(x => x.ControllerType.BaseType != null &&
+                    x.ControllerType.BaseType.IsGenericType &&
                     x.ControllerType.BaseType.GetGenericTypeDefinition() == typeof(GenericController<>))
                 .First();
 
@@ -41,10 +39,10 @@ namespace BeGeneric.Backend.Services.BeGeneric
 
             Dictionary<string, Type> generatedTypes = new();
 
-            foreach (var entity in this.entities.Where(x => !string.IsNullOrEmpty(x.ControllerName)))
+            foreach (var entity in entities.Where(x => !string.IsNullOrEmpty(x.ControllerName)))
             {
-                Type dtoType = DTOObjectHelper.BuildDTOObject(this.entities, entity, structureService, generatedTypes);
-                Type postDtoType = DTOObjectHelper.BuildDTOObject(this.entities, entity, structureService, generatedTypes, true);
+                Type dtoType = DTOObjectHelper.BuildDTOObject(entities, entity, structureService, generatedTypes);
+                Type postDtoType = DTOObjectHelper.BuildDTOObject(entities, entity, structureService, generatedTypes, true);
 
                 if (!generatedTypes.ContainsKey("Search" + (string.IsNullOrEmpty(entity.TableName) ? entity.ObjectName : entity.TableName)))
                 {
@@ -72,7 +70,7 @@ namespace BeGeneric.Backend.Services.BeGeneric
                 var deleteAction = newController.Actions.Where(x => x.ActionName.Contains("DeleteRelatedEntity")).First();
                 var postAction = newController.Actions.Where(x => x.ActionName.Contains("PostRelatedEntity")).First();
 
-                foreach (var crossRelation in this.entities.Where(x => x.EntityRelations != null).SelectMany(x => x.EntityRelations).Where(x => (entity.EntityRelations?.Contains(x) ?? false) || x.RelatedEntityKey == entity.EntityKey))
+                foreach (var crossRelation in entities.Where(x => x.EntityRelations != null).SelectMany(x => x.EntityRelations).Where(x => (entity.EntityRelations?.Contains(x) ?? false) || x.RelatedEntityKey == entity.EntityKey))
                 {
                     var newDeleteAction = new ActionModel(deleteAction)
                     {
@@ -227,25 +225,25 @@ namespace BeGeneric.Backend.Services.BeGeneric
         public int Order => -1000 + 10;
     }
 
-    public class DummyParameterInfo: ParameterInfo
+    public class DummyParameterInfo : ParameterInfo
     {
         private string name;
         private Type type;
 
-        public DummyParameterInfo(Type type, string name, MemberInfo actionMember) : base() 
-        { 
+        public DummyParameterInfo(Type type, string name, MemberInfo actionMember) : base()
+        {
             this.type = type;
             this.name = name;
-            this.MemberImpl = actionMember;
+            MemberImpl = actionMember;
         }
 
-        public override string? Name => this.name;
+        public override string? Name => name;
 
         public override Type ParameterType => type;
 
         public override bool HasDefaultValue => false;
     }
-        
+
 }
 public class SimplePropertyInfo : PropertyInfo
 {
@@ -257,6 +255,11 @@ public class SimplePropertyInfo : PropertyInfo
         if (propertyType == null)
         {
             throw new ArgumentNullException(null, nameof(propertyType));
+        }
+
+        if (string.IsNullOrEmpty(name))
+        {
+            throw new ArgumentException(null, nameof(name));
         }
 
         this.name = name;
@@ -289,10 +292,7 @@ public class SimplePropertyInfo : PropertyInfo
 
     public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, System.Globalization.CultureInfo culture) => throw new NotImplementedException();
 
-    public override object[] GetCustomAttributes(Type attributeType, bool inherit)
-    {
-        return new Attribute[0];
-    }
+    public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotImplementedException();
 
     public override object[] GetCustomAttributes(bool inherit) => throw new NotImplementedException();
 

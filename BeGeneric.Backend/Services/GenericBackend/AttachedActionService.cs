@@ -1,47 +1,42 @@
-﻿namespace BeGeneric.Backend.Services.BeGeneric
+﻿using BeGeneric.Backend.Common;
+
+namespace BeGeneric.Backend.Services.GenericBackend;
+
+public class AttachedActionService<T> : IAttachedActionService<T>
 {
-    public class AttachedActionService<T>: IAttachedActionService<T>
+    private Dictionary<string, Dictionary<ActionType, Dictionary<ActionOrderType, Func<ActionData<T>, Task>>>> attachedActions = new Dictionary<string, Dictionary<ActionType, Dictionary<ActionOrderType, Func<ActionData<T>, Task>>>>();
+
+    public Func<ActionData<G, T>, Task> GetAttachedAction<G>(string controllerName, ActionType actionType, ActionOrderType actionOrder)
     {
-        private Dictionary<string, Dictionary<ActionType, Dictionary<ActionOrderType, Func<ActionData<T>, Task>>>> attachedActions = new Dictionary<string, Dictionary<ActionType, Dictionary<ActionOrderType, Func<ActionData<T>, Task>>>>();
+        return attachedActions.ContainsKey(controllerName) && attachedActions[controllerName].ContainsKey(actionType) && attachedActions[controllerName][actionType].ContainsKey(actionOrder)
+            ? attachedActions[controllerName][actionType][actionOrder]
+            : (Func<ActionData<G, T>, Task>?)null;
+    }
 
-        public Func<ActionData<G, T>, Task> GetAttachedAction<G>(string controllerName, ActionType actionType, ActionOrderType actionOrder)
+    public Func<ActionData<T>, Task> GetAttachedAction(string controllerName, ActionType actionType, ActionOrderType actionOrder)
+    {
+        return attachedActions.ContainsKey(controllerName) && attachedActions[controllerName].ContainsKey(actionType) && attachedActions[controllerName][actionType].ContainsKey(actionOrder)
+            ? attachedActions[controllerName][actionType][actionOrder]
+            : null;
+    }
+
+    public void RegisterAttachedAction<G>(string controllerName, ActionType actionType, ActionOrderType actionOrder, Func<ActionData<G, T>, Task> action)
+    {
+        if (!attachedActions.ContainsKey(controllerName))
         {
-            if (attachedActions.ContainsKey(controllerName) && attachedActions[controllerName].ContainsKey(actionType) && attachedActions[controllerName][actionType].ContainsKey(actionOrder))
-            {
-                return attachedActions[controllerName][actionType][actionOrder];
-            }
-
-            return null;
+            attachedActions[controllerName] = new Dictionary<ActionType, Dictionary<ActionOrderType, Func<ActionData<T>, Task>>>();
         }
 
-        public Func<ActionData<T>, Task> GetAttachedAction(string controllerName, ActionType actionType, ActionOrderType actionOrder)
+        foreach (ActionType actionValue in Enum.GetValues(typeof(ActionType)))
         {
-            if (attachedActions.ContainsKey(controllerName) && attachedActions[controllerName].ContainsKey(actionType) && attachedActions[controllerName][actionType].ContainsKey(actionOrder))
+            if (actionType.HasFlag(actionValue))
             {
-                return attachedActions[controllerName][actionType][actionOrder];
-            }
-
-            return null;
-        }
-
-        public void RegisterAttachedAction<G>(string controllerName, ActionType actionType, ActionOrderType actionOrder, Func<ActionData<G, T>, Task> action)
-        {
-            if (!attachedActions.ContainsKey(controllerName))
-            {
-                attachedActions[controllerName] = new Dictionary<ActionType, Dictionary<ActionOrderType, Func<ActionData<T>, Task>>>();
-            }
-
-            foreach (ActionType actionValue in Enum.GetValues(typeof(ActionType)))
-            {
-                if (actionType.HasFlag(actionValue))
+                if (!attachedActions[controllerName].ContainsKey(actionValue))
                 {
-                    if (!attachedActions[controllerName].ContainsKey(actionValue))
-                    {
-                        attachedActions[controllerName][actionValue] = new Dictionary<ActionOrderType, Func<ActionData<T>, Task>>();
-                    }
-
-                    attachedActions[controllerName][actionValue][actionOrder] = async (x) => await action.Invoke(new ActionData<G, T>(x));
+                    attachedActions[controllerName][actionValue] = new Dictionary<ActionOrderType, Func<ActionData<T>, Task>>();
                 }
+
+                attachedActions[controllerName][actionValue][actionOrder] = async (x) => await action.Invoke(new ActionData<G, T>(x));
             }
         }
     }

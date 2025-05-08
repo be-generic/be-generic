@@ -17,12 +17,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="GraphQL-Parser" Version="9.5.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.8" />
     <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="2.5.1" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
 	  <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
 	  <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BeGeneric.Backend.Abstractions\BeGeneric.Backend.Common.csproj" />
+    <ProjectReference Include="..\BeGeneric.Backend.Database\BeGeneric.Backend.Database.csproj" />
   </ItemGroup>
 
   <ItemGroup>
