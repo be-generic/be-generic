@@ -28,6 +28,10 @@ public class GraphQLToGenericQueryConverter
         {
             filter = ConvertGraphQLWhereObject(whereObj);
         }
+        else if (args.TryGetValue("filter", out whereValue) && whereValue is GraphQLObjectValue filterObj)
+        {
+            filter = ConvertGraphQLWhereObject(filterObj);
+        }
 
         string[] properties = ExtractProperties(field.SelectionSet).ToArray();
 
@@ -64,10 +68,9 @@ public class GraphQLToGenericQueryConverter
                 if (field.Value is GraphQLListValue list)
                 {
                     var nested = new List<ComparerObject>();
-                    foreach (var item in list.Values)
+                    foreach (var item in list.Values.OfType<GraphQLObjectValue>())
                     {
-                        if (item is GraphQLObjectValue sub)
-                            nested.Add(ConvertGraphQLWhereObject(sub));
+                        nested.Add(ConvertGraphQLWhereObject(item));
                     }
 
                     comparisons.Add(new ComparerObject
@@ -79,7 +82,7 @@ public class GraphQLToGenericQueryConverter
             }
             else if (field.Value is GraphQLObjectValue opObj)
             {
-                // Determine if this is a leaf (with operators), or a nested object
+                // Check for nested operator style (existing behavior)
                 bool isOperatorSet = opObj.Fields.All(f =>
                     f.Name.StringValue is "eq" or "neq" or "contains" or "gte" or "lte" or "gt" or "lt" or "startswith" or "endswith" or "null" or "not null");
 
@@ -100,11 +103,50 @@ public class GraphQLToGenericQueryConverter
                 }
                 else
                 {
-                    // Nested object: recurse deeper
+                    // Nested object: recurse
                     var nestedGroup = ConvertGraphQLWhereObject(opObj, fullPath);
                     comparisons.AddRange(nestedGroup.Comparisons);
                 }
             }
+            else
+            {
+                // New: Flattened syntax, e.g. title_contains: "abc"
+                var supportedSuffixes = new[] {
+                    "_eq", "_neq", "_contains", "_startswith", "_endswith",
+                    "_gt", "_lt", "_gte", "_lte", "_null", "_notnull"
+                };
+
+                var matchingSuffix = supportedSuffixes.FirstOrDefault(s => name.EndsWith(s, StringComparison.OrdinalIgnoreCase));
+                if (matchingSuffix != null)
+                {
+                    var property = name[..^matchingSuffix.Length];
+                    var op = matchingSuffix.TrimStart('_').ToLowerInvariant();
+                    var val = ExtractValue(field.Value);
+
+                    comparisons.Add(new ComparerObject
+                    {
+                        Property = string.IsNullOrEmpty(prefix) ? property : $"{prefix}.{property}",
+                        Operator = op switch
+                        {
+                            "notnull" => "not null",
+                            _ => op
+                        },
+                        Filter = val
+                    });
+                }
+                else
+                {
+                    // New: Shorthand form, e.g. title: "report" becomes title eq "report"
+                    var val = ExtractValue(field.Value);
+                    comparisons.Add(new ComparerObject
+                    {
+                        Property = fullPath,
+                        Operator = "eq",
+                        Filter = val
+                    });
+                }
+            }
+
         }
 
         return new ComparerObject
@@ -113,7 +155,6 @@ public class GraphQLToGenericQueryConverter
             Comparisons = comparisons.ToArray()
         };
     }
-
 
     private static List<string> ExtractProperties(GraphQLSelectionSet? selectionSet, string? prefix = null)
     {
