@@ -1,23 +1,7 @@
 {
   "metadata": [
     {
-      "TableName": "Department",
-      "ColumnName": "DepartmentName",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "nvarchar (2000)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Department",
-      "ColumnName": "Id",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "uniqueidentifier",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Employee",
+      "TableName": "Category",
       "ColumnName": "Name",
       "AllowedValues": null,
       "Regex": null,
@@ -25,79 +9,55 @@
       "IsRequired": null
     },
     {
-      "TableName": "Employee",
-      "ColumnName": "Email",
+      "TableName": "Category",
+      "ColumnName": "Description",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "nvarchar (max)",
+      "IsRequired": null
+    },
+    {
+      "TableName": "Category",
+      "ColumnName": "Id",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "uniqueidentifier",
+      "IsRequired": null
+    },
+    {
+      "TableName": "UserProfile",
+      "ColumnName": "UserName",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "nvarchar (3999)",
+      "IsRequired": null
+    },
+    {
+      "TableName": "UserProfile",
+      "ColumnName": "FirstName",
       "AllowedValues": null,
       "Regex": null,
       "DataType": "nvarchar (2000)",
       "IsRequired": null
     },
     {
-      "TableName": "Employee",
-      "ColumnName": "DateHired",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "datetime2 (7)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Employee",
-      "ColumnName": "Salary",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "decimal (10, 2)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Employee",
-      "ColumnName": "Id",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "uniqueidentifier",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Payroll",
-      "ColumnName": "PeriodStart",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "datetime2 (7)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Payroll",
-      "ColumnName": "PeriodEnd",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "datetime2 (7)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Payroll",
-      "ColumnName": "TotalPay",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "decimal (10, 2)",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Payroll",
-      "ColumnName": "Id",
-      "AllowedValues": null,
-      "Regex": null,
-      "DataType": "uniqueidentifier",
-      "IsRequired": null
-    },
-    {
-      "TableName": "Position",
-      "ColumnName": "PositionName",
+      "TableName": "UserProfile",
+      "ColumnName": "LastName",
       "AllowedValues": null,
       "Regex": null,
       "DataType": "nvarchar (2000)",
-      "IsRequired": true
+      "IsRequired": null
     },
     {
-      "TableName": "Position",
+      "TableName": "UserProfile",
+      "ColumnName": "ProfileImage",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "nvarchar (4000)",
+      "IsRequired": null
+    },
+    {
+      "TableName": "UserProfile",
       "ColumnName": "Id",
       "AllowedValues": null,
       "Regex": null,
@@ -105,23 +65,143 @@
       "IsRequired": null
     },
     {
-      "TableName": "Timesheet",
-      "ColumnName": "Date",
+      "TableName": "Task",
+      "ColumnName": "Title",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "nvarchar (2000)",
+      "IsRequired": null
+    },
+    {
+      "TableName": "Task",
+      "ColumnName": "Description",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "nvarchar (max)",
+      "IsRequired": null
+    },
+    {
+      "TableName": "Task",
+      "ColumnName": "Location",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "nvarchar (2000)",
+      "IsRequired": null
+    },
+    {
+      "TableName": "Task",
+      "ColumnName": "Latitude",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "decimal (10, 2)",
+      "IsRequired": null
+    },
+    {
+      "TableName": "Task",
+      "ColumnName": "Longitude",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "decimal (10, 2)",
+      "IsRequired": null
+    },
+    {
+      "TableName": "Task",
+      "ColumnName": "TimeFrom",
       "AllowedValues": null,
       "Regex": null,
       "DataType": "datetime2 (7)",
       "IsRequired": null
     },
     {
-      "TableName": "Timesheet",
-      "ColumnName": "HoursWorked",
+      "TableName": "Task",
+      "ColumnName": "TimeTo",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "datetime2 (7)",
+      "IsRequired": null
+    },
+    {
+      "TableName": "Task",
+      "ColumnName": "CreatedAt",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "datetime2 (7)",
+      "IsRequired": null
+    },
+    {
+      "TableName": "Task",
+      "ColumnName": "CreatedBy",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "nvarchar (3999)",
+      "IsRequired": null
+    },
+    {
+      "TableName": "Task",
+      "ColumnName": "IsResolved",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "bit",
+      "IsRequired": null
+    },
+    {
+      "TableName": "Task",
+      "ColumnName": "Id",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "uniqueidentifier",
+      "IsRequired": null
+    },
+    {
+      "TableName": "TaskReservation",
+      "ColumnName": "ReservedBy",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "nvarchar (3999)",
+      "IsRequired": null
+    },
+    {
+      "TableName": "TaskReservation",
+      "ColumnName": "ReservedAt",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "datetime2 (7)",
+      "IsRequired": null
+    },
+    {
+      "TableName": "TaskReservation",
+      "ColumnName": "IsCompleted",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "bit",
+      "IsRequired": null
+    },
+    {
+      "TableName": "TaskReservation",
+      "ColumnName": "Id",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "uniqueidentifier",
+      "IsRequired": null
+    },
+    {
+      "TableName": "UserKarma",
+      "ColumnName": "TotalCompleted",
       "AllowedValues": null,
       "Regex": null,
       "DataType": "int",
       "IsRequired": null
     },
     {
-      "TableName": "Timesheet",
+      "TableName": "UserKarma",
+      "ColumnName": "LastCompletedAt",
+      "AllowedValues": null,
+      "Regex": null,
+      "DataType": "datetime2 (7)",
+      "IsRequired": null
+    },
+    {
+      "TableName": "UserKarma",
       "ColumnName": "Id",
       "AllowedValues": null,
       "Regex": null,
@@ -131,49 +211,15 @@
   ],
   "entities": [
     {
-      "entityKey": "d9a02040-6725-4ba7-a87e-c15164714c40",
-      "tableName": "Department",
-      "objectName": "Departments",
-      "controllerName": "department",
+      "entityKey": "9bb8d9cc-43e0-80a1-2126-07a775d688ca",
+      "tableName": "Category",
+      "objectName": null,
+      "controllerName": "category",
       "softDeleteColumn": null,
       "defaultValue": null,
       "properties": [
         {
-          "propertyId": "4d21522f-fbf0-4ab0-8d2b-db7e117d1e1c",
-          "propertyName": "DepartmentName",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "00000000-0000-0000-0000-000000000000",
-          "propertyName": "Id",
-          "modelPropertyName": null,
-          "isKey": true,
-          "isReadOnly": true,
-          "isRequired": null,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        }
-      ],
-      "entityRoles": null,
-      "entityRelations": []
-    },
-    {
-      "entityKey": "059fc058-1adb-4da9-951c-67394a6d253a",
-      "tableName": "Employee",
-      "objectName": "Employees",
-      "controllerName": "employee",
-      "softDeleteColumn": null,
-      "defaultValue": null,
-      "properties": [
-        {
-          "propertyId": "23af6c71-888f-4fd0-810a-9e4a7ffc341e",
+          "propertyId": "31b94824-9132-741b-e5e6-f08b457b7ec3",
           "propertyName": "Name",
           "modelPropertyName": null,
           "isKey": false,
@@ -184,58 +230,14 @@
           "relatedModelPropertyName": null
         },
         {
-          "propertyId": "d1def231-6f16-4b04-8c61-ba9b10c6c7d1",
-          "propertyName": "Email",
+          "propertyId": "fc7816b6-4e41-66be-abf6-c1cee07aeaa5",
+          "propertyName": "Description",
           "modelPropertyName": null,
           "isKey": false,
           "isReadOnly": false,
           "isRequired": false,
           "defaultValue": null,
           "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "59007fb7-7cad-4b6d-b34f-64df2275e7d8",
-          "propertyName": "Position",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": "64450c1e-9160-4598-aed1-c842a7550ea6",
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "9a157cf3-88fa-4b77-8d25-337e3964d5db",
-          "propertyName": "DateHired",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "8785d4ac-97c1-4a18-a734-54b0dec8454b",
-          "propertyName": "Salary",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "25cc09fd-15ad-4a3d-102b-43a0b08574b9",
-          "propertyName": "User",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": "3C78639B-8991-440E-B80A-CA327D9F2825",
           "relatedModelPropertyName": null
         },
         {
@@ -250,31 +252,62 @@
           "relatedModelPropertyName": null
         }
       ],
-      "entityRoles": null,
+      "entityRoles": [
+        {
+          "getOne": true,
+          "getAll": true,
+          "put": true,
+          "post": true,
+          "delete": true,
+          "editFilter": null,
+          "viewFilter": null,
+          "roleKey": "anonymous"
+        },
+        {
+          "getOne": true,
+          "getAll": true,
+          "put": true,
+          "post": true,
+          "delete": true,
+          "editFilter": null,
+          "viewFilter": null,
+          "roleKey": "user"
+        },
+        {
+          "getOne": true,
+          "getAll": true,
+          "put": true,
+          "post": true,
+          "delete": true,
+          "editFilter": null,
+          "viewFilter": null,
+          "roleKey": "admin"
+        }
+      ],
       "entityRelations": []
     },
     {
-      "entityKey": "37937464-3bcd-4a78-a5fc-f44a848f0155",
-      "tableName": "Payroll",
-      "objectName": "Payrolls",
-      "controllerName": "payroll",
+      "entityKey": "31099994-b3cc-3ade-768f-8de8d1d47fac",
+      "tableName": "UserProfile",
+      "objectName": null,
+      "controllerName": "profile",
       "softDeleteColumn": null,
       "defaultValue": null,
       "properties": [
         {
-          "propertyId": "5dfd0cb1-7146-4a2f-8f01-43501d9e5b24",
-          "propertyName": "Employee",
+          "propertyId": "729cf60f-2a34-68c4-6980-f66dfdaba366",
+          "propertyName": "UserName",
           "modelPropertyName": null,
           "isKey": false,
           "isReadOnly": false,
           "isRequired": false,
-          "defaultValue": null,
-          "referencingEntityKey": "059fc058-1adb-4da9-951c-67394a6d253a",
+          "defaultValue": "$user",
+          "referencingEntityKey": null,
           "relatedModelPropertyName": null
         },
         {
-          "propertyId": "1cfec004-e882-48fc-8f1e-ed6b886c3a82",
-          "propertyName": "PeriodStart",
+          "propertyId": "52c85e20-a8a0-ab33-31ee-e9498cb53c7f",
+          "propertyName": "FirstName",
           "modelPropertyName": null,
           "isKey": false,
           "isReadOnly": false,
@@ -284,8 +317,8 @@
           "relatedModelPropertyName": null
         },
         {
-          "propertyId": "03089a80-f38f-4801-8a7f-057661c8b559",
-          "propertyName": "PeriodEnd",
+          "propertyId": "e3be9aa0-1540-6c0c-7d59-8444ae68e8aa",
+          "propertyName": "LastName",
           "modelPropertyName": null,
           "isKey": false,
           "isReadOnly": false,
@@ -295,8 +328,8 @@
           "relatedModelPropertyName": null
         },
         {
-          "propertyId": "0f0a46b7-5a3a-4dad-83a0-1e5f8dcdafc8",
-          "propertyName": "TotalPay",
+          "propertyId": "66f29b13-a3c8-6ac7-4699-c0fb682c16e2",
+          "propertyName": "ProfileImage",
           "modelPropertyName": null,
           "isKey": false,
           "isReadOnly": false,
@@ -317,37 +350,167 @@
           "relatedModelPropertyName": null
         }
       ],
-      "entityRoles": null,
+      "entityRoles": [
+        {
+          "getOne": true,
+          "getAll": true,
+          "put": true,
+          "post": true,
+          "delete": true,
+          "editFilter": "{\u0022conjunction\u0022:\u0022and\u0022,\u0022comparisons\u0022:[{\u0022operator\u0022:\u0022eq\u0022,\u0022property\u0022:\u0022userName\u0022,\u0022filter\u0022:\u0022$user\u0022}],\u0022operator\u0022:\u0022eq\u0022}",
+          "viewFilter": "{\u0022conjunction\u0022:\u0022and\u0022,\u0022comparisons\u0022:[{\u0022operator\u0022:\u0022eq\u0022,\u0022property\u0022:\u0022userName\u0022,\u0022filter\u0022:\u0022$user\u0022}],\u0022operator\u0022:\u0022eq\u0022}",
+          "roleKey": "user"
+        },
+        {
+          "getOne": true,
+          "getAll": true,
+          "put": true,
+          "post": true,
+          "delete": true,
+          "editFilter": null,
+          "viewFilter": null,
+          "roleKey": "admin"
+        },
+        {
+          "getOne": true,
+          "getAll": true,
+          "put": false,
+          "post": false,
+          "delete": false,
+          "editFilter": null,
+          "viewFilter": null,
+          "roleKey": "anonymous"
+        }
+      ],
       "entityRelations": []
     },
     {
-      "entityKey": "64450c1e-9160-4598-aed1-c842a7550ea6",
-      "tableName": "Position",
-      "objectName": "Positions",
-      "controllerName": "position",
+      "entityKey": "f284bf21-df3d-56c7-573c-a3424169917e",
+      "tableName": "Task",
+      "objectName": null,
+      "controllerName": "task",
       "softDeleteColumn": null,
       "defaultValue": null,
       "properties": [
         {
-          "propertyId": "0f61cef8-0893-4a44-a9d2-b1a64c5dc1cd",
-          "propertyName": "PositionName",
-          "modelPropertyName": null,
-          "isKey": false,
-          "isReadOnly": false,
-          "isRequired": true,
-          "defaultValue": null,
-          "referencingEntityKey": null,
-          "relatedModelPropertyName": null
-        },
-        {
-          "propertyId": "317fbebe-10a6-44fd-b54d-764fba6eaf6d",
-          "propertyName": "Department",
+          "propertyId": "475b885a-f852-b160-0d53-f1bf500bff8b",
+          "propertyName": "Title",
           "modelPropertyName": null,
           "isKey": false,
           "isReadOnly": false,
           "isRequired": false,
           "defaultValue": null,
-          "referencingEntityKey": "d9a02040-6725-4ba7-a87e-c15164714c40",
+          "referencingEntityKey": null,
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "e574391e-cf73-5038-3b95-df266d55a192",
+          "propertyName": "Description",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": null,
+          "referencingEntityKey": null,
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "01f80b79-f414-4104-dd5f-151f9f8c0e1a",
+          "propertyName": "Category",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": null,
+          "referencingEntityKey": "9bb8d9cc-43e0-80a1-2126-07a775d688ca",
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "66040334-7e19-4b0b-545f-b176193e1bec",
+          "propertyName": "Location",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": null,
+          "referencingEntityKey": null,
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "7243dd6a-960a-6047-1040-4194c44fe05b",
+          "propertyName": "Latitude",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": null,
+          "referencingEntityKey": null,
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "915ab9fe-8432-1339-87a7-c67cb8773596",
+          "propertyName": "Longitude",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": null,
+          "referencingEntityKey": null,
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "4794f178-9399-f432-badd-b8189fe93a07",
+          "propertyName": "TimeFrom",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": null,
+          "referencingEntityKey": null,
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "c4a9ab10-40dd-7535-231e-35d3cf220393",
+          "propertyName": "TimeTo",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": null,
+          "referencingEntityKey": null,
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "4068ec7b-870c-f7b7-dfee-a42ee850ec23",
+          "propertyName": "CreatedAt",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": null,
+          "referencingEntityKey": null,
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "3c07c985-9cea-f577-99c3-e2ac9161d179",
+          "propertyName": "CreatedBy",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": "$user",
+          "referencingEntityKey": null,
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "6eb4bbfe-eb53-313c-cd6d-2c032981943c",
+          "propertyName": "IsResolved",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": null,
+          "referencingEntityKey": null,
           "relatedModelPropertyName": null
         },
         {
@@ -362,31 +525,73 @@
           "relatedModelPropertyName": null
         }
       ],
-      "entityRoles": null,
+      "entityRoles": [
+        {
+          "getOne": true,
+          "getAll": true,
+          "put": true,
+          "post": true,
+          "delete": true,
+          "editFilter": null,
+          "viewFilter": null,
+          "roleKey": "anonymous"
+        },
+        {
+          "getOne": true,
+          "getAll": true,
+          "put": true,
+          "post": true,
+          "delete": true,
+          "editFilter": "{\u0022conjunction\u0022:\u0022and\u0022,\u0022comparisons\u0022:[{\u0022operator\u0022:\u0022eq\u0022,\u0022property\u0022:\u0022createdBy\u0022,\u0022filter\u0022:\u0022$user\u0022}],\u0022operator\u0022:\u0022eq\u0022}",
+          "viewFilter": null,
+          "roleKey": "user"
+        },
+        {
+          "getOne": true,
+          "getAll": true,
+          "put": true,
+          "post": true,
+          "delete": true,
+          "editFilter": null,
+          "viewFilter": null,
+          "roleKey": "admin"
+        }
+      ],
       "entityRelations": []
     },
     {
-      "entityKey": "8394f4c8-2df4-42b7-9a22-e1960b479ac1",
-      "tableName": "Timesheet",
-      "objectName": "Timesheets",
-      "controllerName": "timesheet",
+      "entityKey": "541a2de9-cb23-741a-c8ff-0a73770f0111",
+      "tableName": "TaskReservation",
+      "objectName": null,
+      "controllerName": "task-reservation",
       "softDeleteColumn": null,
       "defaultValue": null,
       "properties": [
         {
-          "propertyId": "ffa9b401-1866-49ae-8495-f2dfae0e6cbf",
-          "propertyName": "Employee",
+          "propertyId": "d0f28d70-58fc-8c74-2e76-4aec2a9d8147",
+          "propertyName": "Task",
           "modelPropertyName": null,
           "isKey": false,
           "isReadOnly": false,
           "isRequired": false,
           "defaultValue": null,
-          "referencingEntityKey": "059fc058-1adb-4da9-951c-67394a6d253a",
+          "referencingEntityKey": "f284bf21-df3d-56c7-573c-a3424169917e",
           "relatedModelPropertyName": null
         },
         {
-          "propertyId": "adbf71e3-23a9-4e13-ab79-917ff62cf5a6",
-          "propertyName": "Date",
+          "propertyId": "4790a87b-ac04-4303-3d50-b64afff8833d",
+          "propertyName": "ReservedBy",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": "$user",
+          "referencingEntityKey": null,
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "eabad8bf-29ab-b07c-964b-63efaac71765",
+          "propertyName": "ReservedAt",
           "modelPropertyName": null,
           "isKey": false,
           "isReadOnly": false,
@@ -396,8 +601,8 @@
           "relatedModelPropertyName": null
         },
         {
-          "propertyId": "595e900c-934d-49f4-b0d5-ad1d50fb9fe3",
-          "propertyName": "HoursWorked",
+          "propertyId": "c0e1d3ff-900d-0f80-79f8-e0e519f95981",
+          "propertyName": "IsCompleted",
           "modelPropertyName": null,
           "isKey": false,
           "isReadOnly": false,
@@ -418,7 +623,115 @@
           "relatedModelPropertyName": null
         }
       ],
-      "entityRoles": null,
+      "entityRoles": [
+        {
+          "getOne": true,
+          "getAll": true,
+          "put": true,
+          "post": true,
+          "delete": true,
+          "editFilter": "{\u0022conjunction\u0022:\u0022and\u0022,\u0022comparisons\u0022:[{\u0022operator\u0022:\u0022eq\u0022,\u0022property\u0022:\u0022reservedBy\u0022,\u0022filter\u0022:\u0022$user\u0022}],\u0022operator\u0022:\u0022eq\u0022}",
+          "viewFilter": "{\u0022conjunction\u0022:\u0022and\u0022,\u0022comparisons\u0022:[{\u0022operator\u0022:\u0022eq\u0022,\u0022property\u0022:\u0022reservedBy\u0022,\u0022filter\u0022:\u0022$user\u0022}],\u0022operator\u0022:\u0022eq\u0022}",
+          "roleKey": "user"
+        },
+        {
+          "getOne": true,
+          "getAll": true,
+          "put": true,
+          "post": true,
+          "delete": true,
+          "editFilter": null,
+          "viewFilter": null,
+          "roleKey": "admin"
+        }
+      ],
+      "entityRelations": []
+    },
+    {
+      "entityKey": "49d05cd0-eeef-6113-16b4-c75f00f4b05f",
+      "tableName": "UserKarma",
+      "objectName": null,
+      "controllerName": "user-karma",
+      "softDeleteColumn": null,
+      "defaultValue": null,
+      "properties": [
+        {
+          "propertyId": "9f66bc7c-6edb-9a5a-93c6-d1fcc4317e64",
+          "propertyName": "UserProfile",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": null,
+          "referencingEntityKey": "31099994-b3cc-3ade-768f-8de8d1d47fac",
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "e9c8fe59-cf20-417d-104a-5c40fef7d017",
+          "propertyName": "TotalCompleted",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": null,
+          "referencingEntityKey": null,
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "5d337289-1456-8857-ffb3-0ac064f0a958",
+          "propertyName": "LastCompletedAt",
+          "modelPropertyName": null,
+          "isKey": false,
+          "isReadOnly": false,
+          "isRequired": false,
+          "defaultValue": null,
+          "referencingEntityKey": null,
+          "relatedModelPropertyName": null
+        },
+        {
+          "propertyId": "00000000-0000-0000-0000-000000000000",
+          "propertyName": "Id",
+          "modelPropertyName": null,
+          "isKey": true,
+          "isReadOnly": true,
+          "isRequired": null,
+          "defaultValue": null,
+          "referencingEntityKey": null,
+          "relatedModelPropertyName": null
+        }
+      ],
+      "entityRoles": [
+        {
+          "getOne": true,
+          "getAll": true,
+          "put": false,
+          "post": false,
+          "delete": false,
+          "editFilter": null,
+          "viewFilter": null,
+          "roleKey": "user"
+        },
+        {
+          "getOne": true,
+          "getAll": true,
+          "put": true,
+          "post": true,
+          "delete": true,
+          "editFilter": null,
+          "viewFilter": null,
+          "roleKey": "admin"
+        },
+        {
+          "getOne": true,
+          "getAll": true,
+          "put": false,
+          "post": false,
+          "delete": false,
+          "editFilter": null,
+          "viewFilter": null,
+          "roleKey": "anonymous"
+        }
+      ],
       "entityRelations": []
     },
     {

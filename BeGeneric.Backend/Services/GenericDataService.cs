@@ -84,7 +84,7 @@ public class GenericDataService<T> : IGenericDataService<T>
             filterObjectWithPermissions = JsonSerializer.Deserialize<ComparerObject>(permissionsFilter, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
         }
 
-        var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, dbParameters.Count, "tab1", null);
+        var filters = filterObjectWithPermissions?.ToSQLQuery(sqlDialect, user, entity, dbSchema, dbParameters.Count, "tab1", null);
 
         if (filters != null && filters.Item1 != null && filters.Item1.Replace("(", "").Replace(")", "").Length > 0)
         {
@@ -208,7 +208,7 @@ public class GenericDataService<T> : IGenericDataService<T>
         query += GenerateSelectQuery(entity, entityIds, ref tabCounter, roleName, userName, parameters, true, "", null, properties);
 
         var joinData = new Dictionary<string, SelectPropertyData>();
-        var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, parameters.Count, "tab1", joinData);
+        var filters = filterObjectWithPermissions?.ToSQLQuery(sqlDialect, user, entity, dbSchema, parameters.Count, "tab1", joinData);
 
         if (filters != null && filters.Item1 != null && filters.Item1.Replace("(", "").Replace(")", "").Length > 0)
         {
@@ -626,7 +626,7 @@ public class GenericDataService<T> : IGenericDataService<T>
             filterObjectWithPermissions = JsonSerializer.Deserialize<ComparerObject>(permissionsFilter, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
         }
 
-        var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, 0, $"{dbSchema}.{sqlDialect.ColumnDelimiterLeft}{entity.TableName}{sqlDialect.ColumnDelimiterRight}", null);
+        var filters = filterObjectWithPermissions?.ToSQLQuery(sqlDialect, user, entity, dbSchema, 0, $"{dbSchema}.{sqlDialect.ColumnDelimiterLeft}{entity.TableName}{sqlDialect.ColumnDelimiterRight}", null);
 
         if (filters != null && filters.Item1 != null && filters.Item1.Replace("(", "").Replace(")", "").Length > 0)
         {
@@ -1020,7 +1020,7 @@ public class GenericDataService<T> : IGenericDataService<T>
             }
         }
 
-        var filters = filterObjectWithPermissions?.ToSQLQuery(user, entity, dbSchema, 0, "tab1", null);
+        var filters = filterObjectWithPermissions?.ToSQLQuery(sqlDialect, user, entity, dbSchema, 0, "tab1", null);
 
         if (filters != null && filters.Item1 != null && filters.Item1.Replace("(", "").Replace(")", "").Length > 0)
         {
@@ -1178,7 +1178,7 @@ public class GenericDataService<T> : IGenericDataService<T>
         if (!string.IsNullOrEmpty(filter))
         {
             var permissionFilterObject = JsonSerializer.Deserialize<ComparerObject>(filter, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
-            var filters = permissionFilterObject?.ToSQLQuery(userName, entity, dbSchema, parameters.Count, $"tab{counter + 1}", null);
+            var filters = permissionFilterObject?.ToSQLQuery(sqlDialect, userName, entity, dbSchema, parameters.Count, $"tab{counter + 1}", null);
 
             if (filters != null && filters.Item1 != null && filters.Item1.Replace("(", "").Replace(")", "").Length > 0)
             {

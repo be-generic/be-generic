@@ -1,4 +1,6 @@
-﻿namespace BeGeneric.Backend.Database.MsSql;
+﻿using BeGeneric.Backend.Common;
+
+namespace BeGeneric.Backend.Database.MsSql;
 
 public class MsSqlDialect: ISqlDialect
 {

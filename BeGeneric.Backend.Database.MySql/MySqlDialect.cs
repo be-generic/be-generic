@@ -1,4 +1,6 @@
-﻿namespace BeGeneric.Backend.Database.MySql;
+﻿using BeGeneric.Backend.Common;
+
+namespace BeGeneric.Backend.Database.MySql;
 
 public class MySqlDialect : ISqlDialect
 {

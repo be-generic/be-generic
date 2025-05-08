@@ -13,11 +13,18 @@ public class ComparerObject : ComparerObjectGroup, IComparerObject
     public string? Property { get; set; }
     public object? Filter { get; set; }
 
-    public override Tuple<string, int, List<Tuple<string, object>>> ToSQLQuery(string userName, Entity entity, string dbSchema, int counter, string originTableAlias, Dictionary<string, SelectPropertyData> joinData)
+    public override Tuple<string, int, List<Tuple<string, object>>> ToSQLQuery(
+        ISqlDialect sqlDialect,
+        string userName, 
+        Entity entity, 
+        string dbSchema, 
+        int counter,
+        string originTableAlias, 
+        Dictionary<string, SelectPropertyData> joinData)
     {
         if (Comparisons != null)
         {
-            return base.ToSQLQuery(userName, entity, dbSchema, counter, originTableAlias, joinData);
+            return base.ToSQLQuery(sqlDialect, userName, entity, dbSchema, counter, originTableAlias, joinData);
         }
 
         List<Tuple<string, object>> parameters = new();
@@ -26,11 +33,11 @@ public class ComparerObject : ComparerObjectGroup, IComparerObject
 
         if (includeAny && !operation.StartsWith("$filterParam"))
         {
-            operation = "EXISTS (" + ResolvePropertyName(entity, originTableAlias, operation) + ")";
+            operation = "EXISTS (" + ResolvePropertyName(sqlDialect, entity, dbSchema, originTableAlias, operation) + ")";
         }
         else
         {
-            operation = operation.Replace("$property", ResolvePropertyName(entity, dbSchema, originTableAlias));
+            operation = operation.Replace("$property", ResolvePropertyName(sqlDialect, entity, dbSchema, originTableAlias));
         }
 
         if (operation.Contains("$filterParam"))
@@ -60,7 +67,13 @@ public class ComparerObject : ComparerObjectGroup, IComparerObject
         return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter, parameters);
     }
 
-    public static Tuple<string, int, List<Tuple<string, object>>> ToGroupSQLQuery(List<ComparerObject> comparers, Entity entity, string dbSchema, int counter, string originTableAlias)
+    internal static Tuple<string, int, List<Tuple<string, object>>> ToGroupSQLQuery(
+        ISqlDialect sqlDialect,
+        List<ComparerObject> comparers, 
+        Entity entity, 
+        string dbSchema, 
+        int counter, 
+        string originTableAlias)
     {
         List<Tuple<string, object>> parameters = new();
 
@@ -85,7 +98,7 @@ public class ComparerObject : ComparerObjectGroup, IComparerObject
 
             foreach (var comparer in comparers)
             {
-                string propertyName = comparer.ResolvePropertyName(entity, dbSchema, originTableAlias);
+                string propertyName = comparer.ResolvePropertyName(sqlDialect, entity, dbSchema, originTableAlias);
                 if (!isFirstInBatch)
                 {
                     sb.Append($@" OR ");
@@ -108,7 +121,13 @@ public class ComparerObject : ComparerObjectGroup, IComparerObject
         return new Tuple<string, int, List<Tuple<string, object>>>(operation, counter, parameters);
     }
 
-    public string ResolvePropertyName(Entity entity, string dbSchema, string originTableAlias, string includedFilter = null, Dictionary<string, SelectPropertyData> joinData = null)
+    public string ResolvePropertyName(
+        ISqlDialect sqlDialect, 
+        Entity entity, 
+        string dbSchema, 
+        string originTableAlias, 
+        string includedFilter = null, 
+        Dictionary<string, SelectPropertyData> joinData = null)
     {
         var properties = Property.Split(".");
 
@@ -122,12 +141,12 @@ public class ComparerObject : ComparerObjectGroup, IComparerObject
         else if (joinData != null && joinData.Any(x => string.Equals(x.Value.TableDTOName, string.Join(".", properties[..^1]), StringComparison.OrdinalIgnoreCase)))
         {
             var data = joinData.First(x => string.Equals(x.Value.TableDTOName, string.Join(".", properties[..^1]), StringComparison.OrdinalIgnoreCase)).Value;
-            return $"[{data.TableName}].[{data.Properties.First(x => string.Equals(properties[^1], x.Item2, StringComparison.OrdinalIgnoreCase)).Item3}]";
+            return $"{sqlDialect.ColumnDelimiterLeft}{data.TableName}{sqlDialect.ColumnDelimiterRight}.{sqlDialect.ColumnDelimiterLeft}{data.Properties.First(x => string.Equals(properties[^1], x.Item2, StringComparison.OrdinalIgnoreCase)).Item3}{sqlDialect.ColumnDelimiterRight}";
         }
         else
         {
             StringBuilder sb = new();
-            sb.Append($@"(SELECT fil_tab{properties.Length - 2}.{properties[^1]} FROM ");
+            sb.Append($@"(SELECT {sqlDialect.ColumnDelimiterLeft}fil_tab{properties.Length - 2}{sqlDialect.ColumnDelimiterRight}.{sqlDialect.ColumnDelimiterLeft}{properties[^1]}{sqlDialect.ColumnDelimiterRight} FROM ");
 
             Entity iterationEntity = entity;
             string firstKey = "";
@@ -183,7 +202,7 @@ public class ComparerObject : ComparerObjectGroup, IComparerObject
                     if (i > 0)
                     {
                         string originalKey = iterationEntity.Properties.FirstOrDefault(x => x.IsKey).PropertyName ?? "Id";
-                        sb.Append($@" ON fil_tab{i - 1}.[{originalKey}]=fil_cross_tab{i}.[{propertyFrom}]");
+                        sb.Append($@" ON {sqlDialect.ColumnDelimiterLeft}fil_tab{i - 1}{sqlDialect.ColumnDelimiterRight}.{sqlDialect.ColumnDelimiterLeft}{originalKey}{sqlDialect.ColumnDelimiterRight}=fil_cross_tab{i}.{sqlDialect.ColumnDelimiterLeft}{propertyFrom}{sqlDialect.ColumnDelimiterRight}");
                     }
                     else
                     {
@@ -193,10 +212,10 @@ public class ComparerObject : ComparerObjectGroup, IComparerObject
                     iterationEntity = crossEntity.Entity1.EntityId != entity1.EntityId ? crossEntity.Entity1 : crossEntity.Entity2;
 
                     sb.Append($@" INNER JOIN ");
-                    sb.Append($@"{dbSchema}.[{iterationEntity.TableName}] AS fil_tab{i} ");
+                    sb.Append($@"{dbSchema}.{sqlDialect.ColumnDelimiterLeft}{iterationEntity.TableName}{sqlDialect.ColumnDelimiterRight} AS fil_tab{i} ");
 
                     string key = iterationEntity.Properties.FirstOrDefault(x => x.IsKey).PropertyName ?? "Id";
-                    sb.Append($@" ON fil_cross_tab{i}.[{propertyTo}]=fil_tab{i}.{key}");
+                    sb.Append($@" ON fil_cross_tab{i}.{sqlDialect.ColumnDelimiterLeft}{propertyTo}]{sqlDialect.ColumnDelimiterRight}fil_tab{i}.{sqlDialect.ColumnDelimiterLeft}{key}{sqlDialect.ColumnDelimiterRight}");
 
                     continue;
                 }
@@ -213,29 +232,30 @@ public class ComparerObject : ComparerObjectGroup, IComparerObject
                 if (!referencingProperty && property.ReferencingEntity != null)
                 {
                     iterationEntity = property.ReferencingEntity;
-                    sb.Append($@"{dbSchema}.[{iterationEntity.TableName}]");
+                    sb.Append($@"{dbSchema}.{sqlDialect.ColumnDelimiterLeft}{iterationEntity.TableName}{sqlDialect.ColumnDelimiterRight}");
                     sb.Append($@" AS fil_tab{i}");
 
                     if (i > 0)
                     {
                         string key = iterationEntity.Properties.FirstOrDefault(x => x.IsKey).PropertyName ?? "Id";
-                        sb.Append($@" ON fil_tab{i - 1}.{property.PropertyName}=fil_tab{i}.{key}");
+                        sb.Append($@" ON fil_tab{i - 1}.{sqlDialect.ColumnDelimiterLeft}{property.PropertyName}{sqlDialect.ColumnDelimiterRight}=fil_tab{i}.{sqlDialect.ColumnDelimiterLeft}{key}{sqlDialect.ColumnDelimiterRight}");
                     }
                     else
                     {
+                        firstKey = property.PropertyName;
                         secondKey = iterationEntity.Properties.FirstOrDefault(x => x.IsKey).PropertyName ?? "Id";
                     }
                 }
                 else if (referencingProperty)
                 {
                     iterationEntity = property.Entity;
-                    sb.Append($@"{dbSchema}.[{iterationEntity.TableName}]");
+                    sb.Append($@"{dbSchema}.{sqlDialect.ColumnDelimiterLeft}{iterationEntity.TableName}{sqlDialect.ColumnDelimiterRight}");
                     sb.Append($@" AS fil_tab{i}");
 
                     if (i > 0)
                     {
                         string key = iterationEntity.Properties.FirstOrDefault(x => x.IsKey).PropertyName ?? "Id";
-                        sb.Append($@" ON fil_tab{i - 1}.{property.PropertyName}=fil_tab{i}.{key}");
+                        sb.Append($@" ON fil_tab{i - 1}.{sqlDialect.ColumnDelimiterLeft}{property.PropertyName}{sqlDialect.ColumnDelimiterRight}=fil_tab{i}.{sqlDialect.ColumnDelimiterLeft}{key}{sqlDialect.ColumnDelimiterRight}");
                     }
                     else
                     {
@@ -255,7 +275,7 @@ public class ComparerObject : ComparerObjectGroup, IComparerObject
 
             if (!string.IsNullOrEmpty(includedFilter))
             {
-                sb.Append($" AND {includedFilter.Replace("$property", $"fil_tab{properties.Length - 2}.[{properties[^1]}]")})");
+                sb.Append($" AND {includedFilter.Replace("$property", $"fil_tab{properties.Length - 2}.{sqlDialect.ColumnDelimiterLeft}{properties[^1]}{sqlDialect.ColumnDelimiterRight}")})");
             }
             else
             {

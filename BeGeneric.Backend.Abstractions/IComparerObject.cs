@@ -8,5 +8,11 @@ public interface IComparerObject: IComparerObjectGroup
     string? Property { get; set; }
     object? Filter { get; set; }
 
-    string ResolvePropertyName(Entity entity, string dbSchema, string originTableAlias, string includedFilter = null, Dictionary<string, SelectPropertyData> joinData = null);
+    string ResolvePropertyName(
+        ISqlDialect sqlDialect,
+        Entity entity, 
+        string dbSchema, 
+        string originTableAlias, 
+        string includedFilter = null,
+        Dictionary<string, SelectPropertyData> joinData = null);
 }

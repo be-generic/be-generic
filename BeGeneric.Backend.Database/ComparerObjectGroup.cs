@@ -14,20 +14,34 @@ public class ComparerObjectGroup : IComparerObjectGroup
     public IComparerObject[]? ComparisonsInternal => Comparisons;
     string? IComparerObjectGroup.Operator { get; set; }
 
-    public virtual Tuple<string, int, List<Tuple<string, object>>> ToSQLQuery(ClaimsPrincipal user, Entity entity, string dbSchema, int counter, string originTableAlias, Dictionary<string, SelectPropertyData> joinData)
+    public virtual Tuple<string, int, List<Tuple<string, object>>> ToSQLQuery(
+        ISqlDialect sqlDialect,
+        ClaimsPrincipal user, 
+        Entity entity, 
+        string dbSchema, 
+        int counter, 
+        string originTableAlias, 
+        Dictionary<string, SelectPropertyData> joinData)
     {
         if (user.Identity.IsAuthenticated)
         {
             ClaimsIdentity userData = user.Identity as ClaimsIdentity;
-            return ToSQLQuery(userData.FindFirst("id").Value, entity, dbSchema, counter, originTableAlias, joinData);
+            return ToSQLQuery(sqlDialect, userData.FindFirst("id").Value, entity, dbSchema, counter, originTableAlias, joinData);
         }
         else
         {
-            return ToSQLQuery((string)null, entity, dbSchema, counter, originTableAlias, joinData);
+            return ToSQLQuery(sqlDialect, (string)null, entity, dbSchema, counter, originTableAlias, joinData);
         }
     }
 
-    public virtual Tuple<string, int, List<Tuple<string, object>>> ToSQLQuery(string userName, Entity entity, string dbSchema, int counter, string originTableAlias, Dictionary<string, SelectPropertyData> joinData)
+    public virtual Tuple<string, int, List<Tuple<string, object>>> ToSQLQuery(
+        ISqlDialect sqlDialect,
+        string userName, 
+        Entity entity, 
+        string dbSchema, 
+        int counter, 
+        string originTableAlias, 
+        Dictionary<string, SelectPropertyData> joinData)
     {
         if (Comparisons == null || Comparisons.Length == 0)
         {
@@ -41,7 +55,7 @@ public class ComparerObjectGroup : IComparerObjectGroup
         int internalCounter = counter;
         foreach (var ci in Comparisons.Where(x => !string.Equals(x.Operator, "contains-any", StringComparison.OrdinalIgnoreCase)))
         {
-            var tmp1 = ci.ToSQLQuery(userName, entity, dbSchema, internalCounter, originTableAlias, joinData);
+            var tmp1 = ci.ToSQLQuery(sqlDialect, userName, entity, dbSchema, internalCounter, originTableAlias, joinData);
             internalCounter = tmp1.Item2;
             comps.Add(tmp1);
         }
@@ -49,7 +63,7 @@ public class ComparerObjectGroup : IComparerObjectGroup
         var comparers = Comparisons.Where(x => string.Equals(x.Operator, "contains-any", StringComparison.OrdinalIgnoreCase)).ToList();
         if (comparers.Count > 0)
         {
-            var tmp1 = ComparerObject.ToGroupSQLQuery(comparers, entity, dbSchema, internalCounter, originTableAlias);
+            var tmp1 = ComparerObject.ToGroupSQLQuery(sqlDialect, comparers, entity, dbSchema, internalCounter, originTableAlias);
             internalCounter = tmp1.Item2;
             comps.Add(tmp1);
         }

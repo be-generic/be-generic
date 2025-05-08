@@ -1,4 +1,4 @@
-﻿namespace BeGeneric.Backend.Database;
+﻿namespace BeGeneric.Backend.Common;
 
 public interface ISqlDialect
 {
