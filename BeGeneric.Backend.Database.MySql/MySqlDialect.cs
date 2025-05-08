@@ -70,16 +70,8 @@ WHERE NOT EXISTS (
     )
 )";
     }
-
     public string GetBasicSelectQuery(IList<string> columnNames, IList<string> columnValues, IList<string> columnPaths, IList<string> outputPaths, bool wrapInJson = false)
     {
-        /*
-        var columnNames = new List<string> { "Id", "Title", "CategoryId", "CategoryName" };
-        var columnValues = new List<string> { "t.Id", "t.Title", "c.Id", "c.Name" };
-        var columnPaths = new List<string> { "id", "title", "id", "name" };
-        var outputPaths = new List<string> { "", "", "category", "category" };
-         */
-
         if (columnNames.Count != columnValues.Count ||
             columnNames.Count != columnPaths.Count ||
             columnNames.Count != outputPaths.Count)
@@ -95,7 +87,7 @@ WHERE NOT EXISTS (
             {
                 string alias = string.IsNullOrWhiteSpace(outputPaths[i])
                     ? columnPaths[i]
-                    : $"{outputPaths[i]}_{columnPaths[i]}"; // Flattened alias for SQL column naming
+                    : $"{outputPaths[i].Replace('.', '_')}_{columnPaths[i]}";
                 selectClauses.Add($"{columnValues[i]} AS {alias}");
             }
 
@@ -103,40 +95,53 @@ WHERE NOT EXISTS (
         }
         else
         {
-            var rootFields = new Dictionary<string, List<(string Key, string Value)>>();
+            var root = new Dictionary<string, object>();
 
-            for (int i = 0; i < columnNames.Count; i++)
+            for (int i = 0; i < columnValues.Count; i++)
             {
-                string parent = outputPaths[i]?.Trim() ?? "";
-                if (!rootFields.ContainsKey(parent))
+                var path = string.IsNullOrWhiteSpace(outputPaths[i])
+                    ? Array.Empty<string>()
+                    : outputPaths[i].Split('.');
+
+                string colName = columnPaths[i];
+                string sqlExpr = columnValues[i];
+
+                var current = root;
+
+                foreach (var segment in path)
                 {
-                    rootFields[parent] = new List<(string, string)>();
+                    if (!current.ContainsKey(segment))
+                        current[segment] = new Dictionary<string, object>();
+
+                    current = (Dictionary<string, object>)current[segment];
                 }
 
-                rootFields[parent].Add((columnPaths[i], columnValues[i]));
+                current[colName] = sqlExpr;
             }
 
-            var jsonFields = new List<string>();
 
-            foreach (var group in rootFields)
-            {
-                if (string.IsNullOrEmpty(group.Key))
-                {
-                    foreach (var (key, val) in group.Value)
-                    {
-                        jsonFields.Add($"'{key}', {val}");
-                    }
-                }
-                else
-                {
-                    var nestedFields = string.Join(", ", group.Value.Select(f => $"'{f.Key}', {f.Value}"));
-                    jsonFields.Add($"'{group.Key}', JSON_OBJECT({nestedFields})");
-                }
-            }
-
-            string jsonObject = $"JSON_OBJECT({string.Join(", ", jsonFields)})";
-            return $"SELECT JSON_ARRAYAGG({jsonObject})";
+            string json = BuildJsonObject(root);
+            return $"SELECT JSON_ARRAYAGG(JSON_OBJECT({json}))";
         }
+    }
+
+    private static string BuildJsonObject(Dictionary<string, object> groupedFields)
+    {
+        var parts = new List<string>();
+
+        foreach (var kvp in groupedFields)
+        {
+            if (kvp.Value is string sqlExpr)
+            {
+                parts.Add($"'{kvp.Key}', {sqlExpr}");
+            }
+            else if (kvp.Value is Dictionary<string, object> nested)
+            {
+                parts.Add($"'{kvp.Key}', JSON_OBJECT({BuildJsonObject(nested)})");
+            }
+        }
+
+        return string.Join(", ", parts);
     }
 
     public string ColumnDelimiterLeft => "`";
