@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -14,8 +14,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BeGeneric.Backend.Database.MsSql\BeGeneric.Backend.Database.MsSql.csproj" />
     <ProjectReference Include="..\BeGeneric.Backend.Database.MySql\BeGeneric.Backend.Database.MySql.csproj" />
-    <ProjectReference Include="..\BeGeneric.Backend.MsSql\BeGeneric.Backend.Database.MsSql.csproj" />
     <ProjectReference Include="..\BeGeneric.Backend\BeGeneric.Backend.csproj" />
   </ItemGroup>
 
